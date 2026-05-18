@@ -1,0 +1,1114 @@
+[
+  {
+    "datetime_local": "2025-11-12T22:30",
+    "name": "10-Year Note Auction",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-13T11:30",
+    "name": "GDP (QoQ) (Q3)",
+    "category": "high",
+    "country": "GB",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-13T11:30",
+    "name": "GDP (YoY) (Q3)",
+    "category": "high",
+    "country": "GB",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-13T11:30",
+    "name": "GDP (MoM) (Sep)",
+    "category": "high",
+    "country": "GB",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-13T21:30",
+    "name": "Crude Oil Inventories",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-13T22:30",
+    "name": "30-Year Bond Auction",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-18T12:40",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-19T11:30",
+    "name": "CPI (YoY) (Oct)",
+    "category": "cpi",
+    "country": "GB",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-19T14:30",
+    "name": "CPI (YoY) (Oct)",
+    "category": "cpi",
+    "country": "EU",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-19T20:00",
+    "name": "Crude Oil Inventories",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-19T23:30",
+    "name": "FOMC Meeting Minutes",
+    "category": "fomc",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-20T17:54",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-20T17:55",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-20T17:56",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-20T17:57",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-20T17:58",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-20T17:59",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-20T18:00",
+    "name": "Average Hourly Earnings (MoM) (Sep)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-20T18:00",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-20T18:00",
+    "name": "Nonfarm Payrolls (Sep)",
+    "category": "nfp",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-20T18:00",
+    "name": "Philadelphia Fed Manufacturing Index (Nov)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-20T18:00",
+    "name": "Unemployment Rate (Sep)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-20T19:30",
+    "name": "Existing Home Sales (Oct)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-25T18:00",
+    "name": "Core Retail Sales (MoM) (Sep)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-25T18:00",
+    "name": "PPI (MoM) (Sep)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-25T18:00",
+    "name": "Retail Sales (MoM) (Sep)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-25T19:30",
+    "name": "CB Consumer Confidence (Nov)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-26T17:00",
+    "name": "Autumn Forecast Statement",
+    "category": "high",
+    "country": "GB",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-26T18:00",
+    "name": "Durable Goods Orders (MoM) (Sep)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-26T18:00",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-26T19:15",
+    "name": "Chicago PMI (Nov)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-11-26T20:00",
+    "name": "Crude Oil Inventories",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-01T19:30",
+    "name": "ISM Manufacturing PMI (Nov)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-01T19:30",
+    "name": "ISM Manufacturing Prices (Nov)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-02T05:30",
+    "name": "Fed Chair Powell Speaks",
+    "category": "fomc",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-02T14:30",
+    "name": "CPI (YoY) (Nov)",
+    "category": "cpi",
+    "country": "EU",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-03T17:45",
+    "name": "ADP Nonfarm Employment Change (Nov)",
+    "category": "nfp",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-03T19:30",
+    "name": "ISM Non-Manufacturing PMI (Nov)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-03T19:30",
+    "name": "ISM Non-Manufacturing Prices (Nov)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-03T20:00",
+    "name": "Crude Oil Inventories",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-04T00:00",
+    "name": "U.S. President Trump Speaks",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-04T18:00",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-05T19:30",
+    "name": "Core PCE Price Index (MoM) (Sep)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-05T19:30",
+    "name": "Core PCE Price Index (YoY) (Sep)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-09T19:30",
+    "name": "JOLTS Job Openings (Sep)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-09T19:31",
+    "name": "JOLTS Job Openings (Oct)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-09T22:30",
+    "name": "10-Year Note Auction",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-10T20:00",
+    "name": "Crude Oil Inventories",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-10T23:30",
+    "name": "FOMC Economic Projections",
+    "category": "fomc",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-10T23:30",
+    "name": "FOMC Statement",
+    "category": "fomc",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-10T23:30",
+    "name": "Fed Interest Rate Decision",
+    "category": "fomc",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-11T00:00",
+    "name": "FOMC Press Conference",
+    "category": "fomc",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-11T18:00",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-11T22:30",
+    "name": "30-Year Bond Auction",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-12T05:45",
+    "name": "U.S. President Trump Speaks",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-12T11:30",
+    "name": "GDP (MoM) (Oct)",
+    "category": "high",
+    "country": "GB",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-16T17:59",
+    "name": "Average Hourly Earnings (MoM) (Oct)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-16T17:59",
+    "name": "Nonfarm Payrolls (Oct)",
+    "category": "nfp",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-16T18:00",
+    "name": "Average Hourly Earnings (MoM) (Nov)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-16T18:00",
+    "name": "Core Retail Sales (MoM) (Oct)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-16T18:00",
+    "name": "Nonfarm Payrolls (Nov)",
+    "category": "nfp",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-16T18:00",
+    "name": "Retail Sales (MoM) (Oct)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-16T18:00",
+    "name": "Unemployment Rate (Nov)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-17T11:30",
+    "name": "CPI (YoY) (Nov)",
+    "category": "cpi",
+    "country": "GB",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-17T14:30",
+    "name": "CPI (YoY) (Nov)",
+    "category": "cpi",
+    "country": "EU",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-17T20:00",
+    "name": "Crude Oil Inventories",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-18T06:30",
+    "name": "U.S. President Trump Speaks",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-18T16:30",
+    "name": "BoE Interest Rate Decision (Dec)",
+    "category": "high",
+    "country": "GB",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-18T17:45",
+    "name": "Deposit Facility Rate (Dec)",
+    "category": "high",
+    "country": "EU",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-18T17:45",
+    "name": "ECB Interest Rate Decision (Dec)",
+    "category": "high",
+    "country": "EU",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-18T18:00",
+    "name": "CPI (YoY) (Nov)",
+    "category": "cpi",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-18T18:00",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-18T18:00",
+    "name": "Philadelphia Fed Manufacturing Index (Dec)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-18T18:15",
+    "name": "ECB Press Conference",
+    "category": "high",
+    "country": "EU",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-19T19:30",
+    "name": "Existing Home Sales (Nov)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-20T06:30",
+    "name": "U.S. President Trump Speaks",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-22T11:30",
+    "name": "GDP (QoQ) (Q3)",
+    "category": "high",
+    "country": "GB",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-22T11:30",
+    "name": "GDP (YoY) (Q3)",
+    "category": "high",
+    "country": "GB",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-23T18:00",
+    "name": "Durable Goods Orders (MoM) (Oct)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-23T18:00",
+    "name": "GDP (QoQ) (Q3)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-23T19:30",
+    "name": "CB Consumer Confidence (Dec)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-24T18:00",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-30T02:30",
+    "name": "Crude Oil Inventories",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-30T19:15",
+    "name": "Chicago PMI (Dec)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-30T23:30",
+    "name": "FOMC Meeting Minutes",
+    "category": "fomc",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-31T18:00",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2025-12-31T20:00",
+    "name": "Crude Oil Inventories",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-01-01T00:00",
+    "name": "New Year - Bank Holiday",
+    "category": "bank_holiday"
+  },
+  {
+    "datetime_local": "2026-01-05T19:30",
+    "name": "ISM Manufacturing PMI (Dec)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-01-05T19:30",
+    "name": "ISM Manufacturing Prices (Dec)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-01-08T15:30",
+    "name": "Nonfarm Payrolls",
+    "category": "nfp"
+  },
+  {
+    "datetime_local": "2026-01-14T15:30",
+    "name": "US CPI",
+    "category": "cpi"
+  },
+  {
+    "datetime_local": "2026-01-28T21:00",
+    "name": "FOMC Meeting",
+    "category": "fomc"
+  },
+  {
+    "datetime_local": "2026-02-05T15:30",
+    "name": "Nonfarm Payrolls",
+    "category": "nfp"
+  },
+  {
+    "datetime_local": "2026-02-11T15:30",
+    "name": "US CPI",
+    "category": "cpi"
+  },
+  {
+    "datetime_local": "2026-02-19T21:00",
+    "name": "FOMC Minutes",
+    "category": "fomc"
+  },
+  {
+    "datetime_local": "2026-03-05T15:30",
+    "name": "Nonfarm Payrolls",
+    "category": "nfp"
+  },
+  {
+    "datetime_local": "2026-03-11T14:30",
+    "name": "US CPI",
+    "category": "cpi"
+  },
+  {
+    "datetime_local": "2026-03-18T21:00",
+    "name": "FOMC Meeting",
+    "category": "fomc"
+  },
+  {
+    "datetime_local": "2026-04-02T15:30",
+    "name": "Nonfarm Payrolls",
+    "category": "nfp"
+  },
+  {
+    "datetime_local": "2026-04-03T00:00",
+    "name": "Good Friday - Bank Holiday",
+    "category": "bank_holiday"
+  },
+  {
+    "datetime_local": "2026-04-06T00:00",
+    "name": "Easter Monday - Bank Holiday",
+    "category": "bank_holiday"
+  },
+  {
+    "datetime_local": "2026-04-08T21:00",
+    "name": "FOMC Minutes",
+    "category": "fomc"
+  },
+  {
+    "datetime_local": "2026-04-10T17:00",
+    "name": "Core CPI (MoM) (Mar)",
+    "category": "cpi",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-10T17:00",
+    "name": "CPI (MoM) (Mar)",
+    "category": "cpi",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-10T17:00",
+    "name": "CPI (YoY) (Mar)",
+    "category": "cpi",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-13T18:30",
+    "name": "Existing Home Sales (Mar)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-14T17:00",
+    "name": "PPI (MoM) (Mar)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-15T14:30",
+    "name": "U.S. President Trump Speaks",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-15T15:30",
+    "name": "US CPI",
+    "category": "cpi"
+  },
+  {
+    "datetime_local": "2026-04-15T19:00",
+    "name": "Crude Oil Inventories",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-16T10:30",
+    "name": "GDP (MoM) (Feb)",
+    "category": "high",
+    "country": "GB",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-16T13:30",
+    "name": "CPI (YoY) (Mar)",
+    "category": "cpi",
+    "country": "EU",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-16T17:00",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-16T17:00",
+    "name": "Philadelphia Fed Manufacturing Index (Apr)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-17T03:30",
+    "name": "U.S. President Trump Speaks",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-17T22:30",
+    "name": "U.S. President Trump Speaks",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-21T17:00",
+    "name": "Core Retail Sales (MoM) (Mar)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-21T17:00",
+    "name": "Retail Sales (MoM) (Mar)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-21T17:00",
+    "name": "U.S. President Trump Speaks",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-22T10:30",
+    "name": "CPI (YoY) (Mar)",
+    "category": "cpi",
+    "country": "GB",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-22T19:00",
+    "name": "Crude Oil Inventories",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-23T17:00",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-23T18:15",
+    "name": "S&P Global Manufacturing PMI (Apr)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-23T18:15",
+    "name": "S&P Global Services PMI (Apr)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-25T20:30",
+    "name": "U.S. President Trump Speaks",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-26T07:15",
+    "name": "U.S. President Trump Speaks",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-27T03:30",
+    "name": "U.S. President Trump Speaks",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-28T18:30",
+    "name": "CB Consumer Confidence (Apr)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-29T17:00",
+    "name": "Durable Goods Orders (MoM) (Mar)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-29T19:00",
+    "name": "Crude Oil Inventories",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-29T21:00",
+    "name": "FOMC Meeting",
+    "category": "fomc"
+  },
+  {
+    "datetime_local": "2026-04-29T22:30",
+    "name": "FOMC Statement",
+    "category": "fomc",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-29T22:30",
+    "name": "Fed Interest Rate Decision",
+    "category": "fomc",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-29T23:00",
+    "name": "FOMC Press Conference",
+    "category": "fomc",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-30T13:30",
+    "name": "CPI (YoY) (Apr)",
+    "category": "cpi",
+    "country": "EU",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-30T15:30",
+    "name": "BoE Interest Rate Decision (Apr)",
+    "category": "high",
+    "country": "GB",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-30T16:45",
+    "name": "Deposit Facility Rate (Apr)",
+    "category": "high",
+    "country": "EU",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-30T16:45",
+    "name": "ECB Interest Rate Decision (Apr)",
+    "category": "high",
+    "country": "EU",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-30T17:00",
+    "name": "Core PCE Price Index (MoM) (Mar)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-30T17:00",
+    "name": "Core PCE Price Index (YoY) (Mar)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-30T17:00",
+    "name": "GDP (QoQ) (Q1)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-30T17:00",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-30T17:15",
+    "name": "ECB Press Conference",
+    "category": "high",
+    "country": "EU",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-04-30T18:15",
+    "name": "Chicago PMI (Apr)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-01T00:00",
+    "name": "Labour Day - Bank Holiday",
+    "category": "bank_holiday"
+  },
+  {
+    "datetime_local": "2026-05-01T18:15",
+    "name": "S&P Global Manufacturing PMI (Apr)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-01T18:30",
+    "name": "ISM Manufacturing PMI (Apr)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-01T18:30",
+    "name": "ISM Manufacturing Prices (Apr)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-01T23:30",
+    "name": "U.S. President Trump Speaks",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-05T18:15",
+    "name": "S&P Global Services PMI (Apr)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-05T18:29",
+    "name": "New Home Sales (Feb)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-05T18:30",
+    "name": "ISM Non-Manufacturing PMI (Apr)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-05T18:30",
+    "name": "ISM Non-Manufacturing Prices (Apr)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-05T18:30",
+    "name": "JOLTS Job Openings (Mar)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-05T18:30",
+    "name": "New Home Sales (Mar)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-06T16:45",
+    "name": "ADP Nonfarm Employment Change (Apr)",
+    "category": "nfp",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-06T19:00",
+    "name": "Crude Oil Inventories",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-07T15:30",
+    "name": "Nonfarm Payrolls",
+    "category": "nfp"
+  },
+  {
+    "datetime_local": "2026-05-07T17:00",
+    "name": "Initial Jobless Claims",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-08T17:00",
+    "name": "Average Hourly Earnings (MoM) (Apr)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-08T17:00",
+    "name": "Nonfarm Payrolls (Apr)",
+    "category": "nfp",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-08T17:00",
+    "name": "Unemployment Rate (Apr)",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  },
+  {
+    "datetime_local": "2026-05-08T20:30",
+    "name": "U.S. President Trump Speaks",
+    "category": "high",
+    "country": "US",
+    "impact": "high"
+  }
+]

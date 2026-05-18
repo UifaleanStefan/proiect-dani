@@ -1,0 +1,132 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-warm: #ede3d2;
+  --bg-warm-2: #d9cdb8;
+  --card: rgba(255, 255, 255, 0.62);
+  --card-strong: rgba(255, 255, 255, 0.82);
+  --card-border: rgba(255, 255, 255, 0.55);
+  --ink: #15130f;
+  --ink-muted: #7a7368;
+  --divider: rgba(31, 29, 26, 0.08);
+
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "ss01" 1;
+  font-optical-sizing: auto;
+}
+
+html,
+body {
+  background: #ede3d2;
+}
+
+#root {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Hide scrollbars but keep scroll functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Slim scrollbars where visible */
+.slim-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.slim-scroll::-webkit-scrollbar-thumb {
+  background: rgba(31, 29, 26, 0.18);
+  border-radius: 4px;
+}
+.slim-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(31, 29, 26, 0.32);
+}
+.slim-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Glass card base */
+.glass {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  backdrop-filter: blur(28px) saturate(160%);
+}
+.glass-strong {
+  background: var(--card-strong);
+  border: 1px solid var(--card-border);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  backdrop-filter: blur(28px) saturate(160%);
+}
+.glass-tint-win {
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(31, 184, 92, 0.12) 0%, rgba(255, 255, 255, 0) 60%),
+    var(--card);
+}
+.glass-tint-loss {
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(225, 74, 56, 0.12) 0%, rgba(255, 255, 255, 0) 60%),
+    var(--card);
+}
+.glass-tint-be {
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(244, 184, 58, 0.14) 0%, rgba(255, 255, 255, 0) 60%),
+    var(--card);
+}
+
+/* Tabular nums for any digit-heavy column */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "kern" 1;
+}
+
+/* Subtle background grain over the cream gradient */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(rgba(31, 29, 26, 0.05) 1px, transparent 1px);
+  background-size: 4px 4px;
+  opacity: 0.4;
+  mix-blend-mode: multiply;
+}

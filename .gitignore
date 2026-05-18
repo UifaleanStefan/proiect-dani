@@ -1,0 +1,59 @@
+# ─── Node / React (dashboard) ────────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.local
+.DS_Store
+
+# ─── Python (engine) ─────────────────────────────────────────────────────────
+engine/.venv/
+engine/.pytest_cache/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python-version
+
+# ─── Engine output (rebuilt by `python -m engine ...`) ───────────────────────
+engine/data/runs/
+public/engine-data/snapshots/
+public/engine-data/result.json
+public/engine-data/stats_summary.json
+public/engine-data/manifest.json
+# Keep an empty marker so the directory exists in fresh clones
+!public/engine-data/.gitkeep
+
+# ─── Raw market data (huge — fetched separately by the user) ─────────────────
+*.csv
+# Keep the news cache (small JSON of investing.com events)
+!engine/data/news_cache.json
+
+# ─── Editor / IDE ────────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ─── OS ──────────────────────────────────────────────────────────────────────
+Thumbs.db
+desktop.ini
+
+# ─── Secrets ─────────────────────────────────────────────────────────────────
+.env
+.env.local
+*.key
+*.pem
+
+# ─── Claude / plan files (local dev) ─────────────────────────────────────────
+.claude/
