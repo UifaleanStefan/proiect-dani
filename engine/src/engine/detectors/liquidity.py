@@ -364,51 +364,76 @@ def find_sweep_events(df: pd.DataFrame) -> list[SweepEvent]:
 
 
 def _find_hod_lod_touch_events(df: pd.DataFrame) -> list[SweepEvent]:
-    """One event per day: first HOD/LOD touch in 10:00..12:00."""
+    """One event per day: first HOD/LOD touch in 10:00..12:00.
+
+    Vectorized (O(n)): HOD/LOD per session day = extreme of the formation window
+    [previous-trading-day last candle .. today 09:59], computed via groupby, plus
+    the carried-forward previous-day last candle. The 10:00..12:00 touch scan uses
+    precomputed per-day position lists. Avoids the O(days x n) per-day full-frame
+    masking that made the full 2020-2026 run hang.
+    """
+    n = len(df)
+    if n == 0:
+        return []
     events: list[SweepEvent] = []
     times_local = df.index.tz_convert(config.TIMEZONE)
     high = df["high"].to_numpy()
     low = df["low"].to_numpy()
+    date_arr = np.asarray(times_local.date)          # python date objects, computed once
+    hour_arr = np.asarray(times_local.hour)          # int hours, once
+    pos = np.arange(n)
 
-    touch_start = config.HOD_LOD_FORMATION_END_HOUR     # 10
-    touch_end = config.HOD_LOD_SWEEP_DEADLINE_HOUR       # 12
+    touch_start = config.HOD_LOD_FORMATION_END_HOUR   # 10
+    touch_end = config.HOD_LOD_SWEEP_DEADLINE_HOUR    # 12
 
-    days = pd.unique(df.index.normalize())
-    for d in days:
-        d_ts = pd.Timestamp(d)
-        hod, lod = _session_hod_lod(df, d_ts)
-        if hod is None and lod is None:
+    # --- Per-day formation extremes over the morning (00:00..09:59) ---
+    morning = hour_arr < touch_start
+    md = pd.DataFrame({
+        "d": date_arr[morning], "h": high[morning],
+        "l": low[morning], "p": pos[morning],
+    })
+    if md.empty:
+        return []
+    hod_rows = md.loc[md.groupby("d")["h"].idxmax()].set_index("d")
+    lod_rows = md.loc[md.groupby("d")["l"].idxmin()].set_index("d")
+
+    # --- Last candle position per calendar day (for prev-day carry-forward) ---
+    last_pos_per_day = pd.Series(pos, index=pd.Index(date_arr)).groupby(level=0).max()
+
+    # --- Touch-window (10:00..12:00) positions per day, in order ---
+    win = (hour_arr >= touch_start) & (hour_arr < touch_end)
+    wd = pd.DataFrame({"d": date_arr[win], "p": pos[win]}).sort_values("p")
+    win_by_day: dict = {d: grp.to_numpy() for d, grp in wd.groupby("d")["p"]}
+
+    all_days = sorted(set(date_arr))
+    prev_day = None
+    for d in all_days:
+        if d not in hod_rows.index:
+            prev_day = d
             continue
-        hod_idx, hod_price = hod if hod is not None else (None, None)
-        lod_idx, lod_price = lod if lod is not None else (None, None)
+        hr = hod_rows.loc[d]
+        lr = lod_rows.loc[d]
+        hod_idx, hod_price = int(hr["p"]), float(hr["h"])
+        lod_idx, lod_price = int(lr["p"]), float(lr["l"])
+        # Carry forward the previous trading day's last candle (its 22:59 extreme)
+        if prev_day is not None and prev_day in last_pos_per_day.index:
+            pl = int(last_pos_per_day.loc[prev_day])
+            if high[pl] > hod_price:
+                hod_idx, hod_price = pl, float(high[pl])
+            if low[pl] < lod_price:
+                lod_idx, lod_price = pl, float(low[pl])
 
-        # Iterate candles of THIS day in the 10:00..12:00 window, in order.
-        day_date = d_ts.date()
-        # Build a boolean mask once for this day's touch window
-        # times_local.date / .hour on a DatetimeIndex return numpy arrays already
-        day_mask = (
-            (times_local.date == day_date)
-            & (times_local.hour >= touch_start)
-            & (times_local.hour < touch_end)
-        )
-        day_positions = np.nonzero(np.asarray(day_mask))[0]
-        if day_positions.size == 0:
-            continue
-
-        first_event = None
-        for j in day_positions:
-            # HOD touch (sell) — price reaches the high
-            if hod_idx is not None and j > hod_idx and high[j] >= hod_price:
-                first_event = _make_event(df, int(j), df.index[j], "sell",
-                                          hod_price, hod_idx, "HOD")
+        for j in win_by_day.get(d, ()):  # already in time order
+            j = int(j)
+            if j > hod_idx and high[j] >= hod_price:
+                events.append(_make_event(df, j, df.index[j], "sell",
+                                          hod_price, hod_idx, "HOD"))
                 break
-            # LOD touch (buy) — price reaches the low
-            if lod_idx is not None and j > lod_idx and low[j] <= lod_price:
-                first_event = _make_event(df, int(j), df.index[j], "buy",
-                                          lod_price, lod_idx, "LOD")
+            if j > lod_idx and low[j] <= lod_price:
+                events.append(_make_event(df, j, df.index[j], "buy",
+                                          lod_price, lod_idx, "LOD"))
                 break
-        if first_event is not None:
-            events.append(first_event)
+        prev_day = d
 
     events.sort(key=lambda e: e.sweep_idx)
     return events
