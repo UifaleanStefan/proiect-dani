@@ -1,0 +1,88 @@
+{
+  "csv_range": {
+    "from": "2026-01-02T01:15:00+02:00",
+    "to": "2026-05-14T21:58:00+03:00",
+    "candles": 112295
+  },
+  "total_trades": 30,
+  "decided_trades": 30,
+  "wins": 6,
+  "losses": 22,
+  "break_even": 2,
+  "open": 0,
+  "win_rate_pct": 20.0,
+  "account_return_pct_at_1pct_risk": -10.0,
+  "by_setup": {
+    "2CG": {
+      "count": 1,
+      "wins": 0,
+      "losses": 1,
+      "be": 0,
+      "win_rate_pct": 0.0
+    },
+    "2G": {
+      "count": 2,
+      "wins": 0,
+      "losses": 2,
+      "be": 0,
+      "win_rate_pct": 0.0
+    },
+    "OSG": {
+      "count": 11,
+      "wins": 2,
+      "losses": 9,
+      "be": 0,
+      "win_rate_pct": 18.2
+    },
+    "SLG + OSG": {
+      "count": 4,
+      "wins": 1,
+      "losses": 3,
+      "be": 0,
+      "win_rate_pct": 25.0
+    },
+    "SLG + 2CG": {
+      "count": 2,
+      "wins": 0,
+      "losses": 1,
+      "be": 1,
+      "win_rate_pct": 0.0
+    },
+    "3G": {
+      "count": 2,
+      "wins": 1,
+      "losses": 1,
+      "be": 0,
+      "win_rate_pct": 50.0
+    },
+    "SLG + 3G": {
+      "count": 2,
+      "wins": 0,
+      "losses": 2,
+      "be": 0,
+      "win_rate_pct": 0.0
+    },
+    "SLG + 2G": {
+      "count": 4,
+      "wins": 1,
+      "losses": 2,
+      "be": 1,
+      "win_rate_pct": 25.0
+    },
+    "3CG": {
+      "count": 2,
+      "wins": 1,
+      "losses": 1,
+      "be": 0,
+      "win_rate_pct": 50.0
+    }
+  },
+  "by_session": {
+    "London": 30
+  },
+  "by_liquidity": {
+    "HOD": 17,
+    "LOD": 13
+  },
+  "trades_with_news_high": 6
+}
