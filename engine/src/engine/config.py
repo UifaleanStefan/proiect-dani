@@ -74,8 +74,24 @@ DISPLACEMENT_LOOKFORWARD_LIMIT = 90  # look up to 90 min after the touch
 # Setup execution
 TP_RR_RATIO = 2.0  # fixed 1:2 RR, no exceptions
 BE_RR_TRIGGER = 1.4  # at 1.4 RR move SL to entry
-SL_BUFFER_POINTS = 2.0  # buffer above swing high / below swing low (2-3 points per user spec)
+SL_BUFFER_POINTS = 2.0  # SL placed exactly this many points beyond the relevant high/low
 GAP_ENTRY_TIMEOUT_MINUTES = 60  # skip trade if price doesn't enter the gap in this window
+
+# v0.7 — minimum FVG/gap size (points). Smaller gaps are not tradeable.
+MIN_FVG_SIZE_POINTS = 1.5
+
+# v0.7 — dynamic SL size band, scaled with price.
+# At SL_REF_PRICE the band is [SL_MIN_AT_REF, SL_MAX_AT_REF]. For price P the band is
+# X*min, X*max where X = floor(P / SL_QUANTIZE_STEP) * SL_QUANTIZE_STEP / SL_REF_PRICE.
+# (Recomputed each SL_QUANTIZE_STEP move, not per trade.) Out-of-band trades are skipped.
+SL_REF_PRICE = 15000.0
+SL_MIN_AT_REF = 10.0
+SL_MAX_AT_REF = 35.0
+SL_QUANTIZE_STEP = 1000.0
+
+# v0.7 — load-time timestamp shift (minutes). The broker data is 1h behind TradingView,
+# so we add 60 at load. Overridable via --shift-minutes.
+CSV_SHIFT_MINUTES_DEFAULT = 0
 
 # MG (Multiple Gaps) discount rule
 MG_CORRECTION_THRESHOLD = 0.5  # 50% retracement of displacement

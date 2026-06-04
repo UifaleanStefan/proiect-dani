@@ -27,6 +27,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="After run, copy result.json + snapshots to this directory "
                         "(typically D:/ProiectDani/public/engine-data) so the React "
                         "dashboard at port 5173 picks them up.")
+    p.add_argument("--shift-minutes", type=int, default=0,
+                   help="Add N minutes to every CSV timestamp before processing "
+                        "(use 60 when broker data is 1h behind TradingView).")
     return p
 
 
@@ -42,6 +45,7 @@ def main(argv: list[str] | None = None) -> int:
         refresh_news=args.refresh_news,
         news_window_days=args.news_window_days,
         publish_to=args.publish_to,
+        shift_minutes=args.shift_minutes,
     )
     print()
     print(f"DONE: {summary['n_trades']} trades written")

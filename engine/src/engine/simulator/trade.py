@@ -21,11 +21,13 @@ Break-even rule:
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import pandas as pd
 
 from .. import config
+from ..detectors import mss as mss_mod
 from ..detectors.setup_classifier import Setup
 
 
@@ -60,36 +62,43 @@ def simulate(df: pd.DataFrame, setup: Setup) -> TradeOutcome | None:
     direction = setup.displacement.direction
     entry_price = setup.entry_price
     disp = setup.displacement
-    sweep_time = disp.sweep.sweep_time
+    touch = disp.sweep
+    sweep_time = touch.sweep_time
 
-    # --- Determine SL price ---
-    sl_price = _compute_sl(df, disp)
-    if sl_price is None:
-        return None
-    risk = abs(entry_price - sl_price)
-    if risk < 0.5:  # too tight to be meaningful
-        return None
-
-    # --- Compute TP at fixed 1:2 RR ---
-    if direction == "buy":
-        tp_price = entry_price + config.TP_RR_RATIO * risk
-    else:
-        tp_price = entry_price - config.TP_RR_RATIO * risk
-
-    # --- Find entry trigger with 60-minute timeout ---
+    # --- 1. Find entry trigger with 60-minute gap-fill timeout ---
     entry_idx = _find_entry(df, setup, direction)
     if entry_idx is None:
         return None
-
     entry_time = df.index[entry_idx]
     gap_complete_time = df.index[setup.entry_idx_hint]
     gapfill_td = entry_time - gap_complete_time
     timeout = pd.Timedelta(minutes=config.GAP_ENTRY_TIMEOUT_MINUTES)
     if gapfill_td > timeout:
-        # Strategy rule: skip if gap not entered within 60 min
+        return None
+    setup_time_td = gap_complete_time - sweep_time
+
+    # --- 2. MSS must form in [touch, entry] (any order vs FVG, before execution) ---
+    mss = mss_mod.find_last_mss_in_range(df, touch, end_idx=entry_idx)
+    if mss is None:
+        return None
+    setup.mss = mss
+
+    # --- 3. SL = protective extreme between touch and entry, +/- buffer ---
+    sl_price = _compute_sl(df, touch.sweep_idx, entry_idx, direction)
+    if sl_price is None:
+        return None
+    risk = abs(entry_price - sl_price)
+
+    # --- 4. Dynamic SL size band (scaled with price); skip if out of band ---
+    lo, hi = _sl_bounds(entry_price)
+    if risk < lo or risk > hi:
         return None
 
-    setup_time_td = gap_complete_time - sweep_time
+    # --- 5. Compute TP at fixed 1:2 RR ---
+    if direction == "buy":
+        tp_price = entry_price + config.TP_RR_RATIO * risk
+    else:
+        tp_price = entry_price - config.TP_RR_RATIO * risk
 
     # --- Walk forward and detect TP / BE / SL ---
     n = len(df)
@@ -142,18 +151,40 @@ def simulate(df: pd.DataFrame, setup: Setup) -> TradeOutcome | None:
                   state == "be_armed", 0.0, setup_time_td, gapfill_td)
 
 
-def _compute_sl(df: pd.DataFrame, disp) -> float | None:
-    """v0.5: SL = touched liquidity level +/- buffer.
+def _compute_sl(df: pd.DataFrame, touch_idx: int, entry_idx: int,
+                direction: str) -> float | None:
+    """v0.7: SL placed at the protective extreme between the touch and the entry,
+    plus the buffer.
 
-    If price touches an upper liquidity at P (and we go short), SL = P + buffer.
-    If price touches a lower liquidity at P (and we go long), SL = P - buffer.
-    This guarantees that if the level is re-liquidated, we're out cleanly.
+    - sell: SL = max(high in [touch_idx, entry_idx]) + buffer
+    - buy:  SL = min(low  in [touch_idx, entry_idx]) - buffer
+
+    This guarantees that if the move's extreme is re-tested, we're out cleanly.
     """
-    touch = disp.sweep
     buffer = config.SL_BUFFER_POINTS
-    if disp.direction == "buy":
-        return float(touch.swept_price) - buffer
-    return float(touch.swept_price) + buffer
+    lo = min(touch_idx, entry_idx)
+    hi = max(touch_idx, entry_idx)
+    window = df.iloc[lo : hi + 1]
+    if len(window) == 0:
+        return None
+    if direction == "sell":
+        return float(window["high"].max()) + buffer
+    return float(window["low"].min()) - buffer
+
+
+def _sl_bounds(price: float) -> tuple[float, float]:
+    """v0.7: dynamic SL size band scaled with price.
+
+    ref = floor(price / SL_QUANTIZE_STEP) * SL_QUANTIZE_STEP  (recompute each 1000 move)
+    X   = ref / SL_REF_PRICE
+    returns (X * SL_MIN_AT_REF, X * SL_MAX_AT_REF)
+    At price 15000 -> (10, 35). At 24000 -> (16, 56).
+    """
+    ref = math.floor(price / config.SL_QUANTIZE_STEP) * config.SL_QUANTIZE_STEP
+    if ref <= 0:
+        ref = config.SL_QUANTIZE_STEP
+    x = ref / config.SL_REF_PRICE
+    return x * config.SL_MIN_AT_REF, x * config.SL_MAX_AT_REF
 
 
 def _find_entry(df: pd.DataFrame, setup: Setup, direction: str) -> int | None:

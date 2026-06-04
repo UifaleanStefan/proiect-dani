@@ -17,6 +17,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from .. import config
 from .displacement import Displacement
 
 
@@ -48,6 +49,9 @@ def find_gaps_in(df: pd.DataFrame, disp: Displacement) -> list[Gap]:
     for c2 in range(max(1, disp.start_idx), min(len(df) - 1, disp.end_idx + 1)):
         gap = _detect_gap(df, c2, in_displacement=True)
         if gap is None:
+            continue
+        # v0.7: minimum FVG size — gaps smaller than this are not tradeable
+        if gap.size_points < config.MIN_FVG_SIZE_POINTS:
             continue
         # Direction match: gap direction + c2 color must align with trade
         if disp.direction == "buy":

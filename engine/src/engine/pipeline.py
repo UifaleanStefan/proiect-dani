@@ -64,6 +64,7 @@ def run(
     refresh_news: bool = False,
     news_window_days: int = 180,
     publish_to: str | Path | None = None,
+    shift_minutes: int = 0,
 ) -> dict:
     """Run the engine end-to-end. Returns summary dict and writes result.json."""
     out_dir = Path(out_dir)
@@ -78,8 +79,9 @@ def run(
         added = news_scraper.merge_with_cache(events, news_path)
         print(f"      {added} new events merged into {news_path}")
 
-    print(f"[1/7] Loading CSV: {csv_path}")
-    df = csv_loader.load(csv_path, slice_start=slice_start, slice_end=slice_end)
+    print(f"[1/7] Loading CSV: {csv_path}" + (f"  (+{shift_minutes}min shift)" if shift_minutes else ""))
+    df = csv_loader.load(csv_path, slice_start=slice_start, slice_end=slice_end,
+                         shift_minutes=shift_minutes)
     print(f"      {len(df):,} candles, {df.index[0]} -> {df.index[-1]}")
 
     print("[2/7] Annotating swings + ATR + daily bias")
@@ -91,13 +93,13 @@ def run(
     sweeps = liq_mod.find_sweep_events(df)
     print(f"      {len(sweeps)} sweep events")
 
-    print("[4/7] Building setups (MSS + displacement + FVG + classifier)")
+    print("[4/7] Building setups (displacement + FVG + classifier)")
     news = nf_mod.load_news(news_path) if news_path else []
     setups: list = []
     for sweep in sweeps:
-        # v0.4 order: sweep -> displacement -> first aligned gaps -> setup -> LAST MSS
-        # MSS is decoupled from setup detection: it's a confirmation marker computed
-        # AFTER we know the entry candle.
+        # v0.7 order: sweep -> displacement -> first aligned gaps (>=1.5p) -> setup.
+        # MSS is validated inside the simulator: it must form in [touch, entry] in
+        # any order relative to the FVG, but before execution (no hindsight).
         disp = disp_mod.find_displacement_after_sweep(df, sweep)
         if disp is None:
             continue
@@ -107,16 +109,6 @@ def run(
         setup = sc_mod.classify(df, disp, gaps)
         if setup is None:
             continue
-        # MSS must confirm the reversal BY the time the chosen gap completes
-        # (i.e. during the displacement) — otherwise it's hindsight, not a
-        # real confirmation. This keeps entries to genuine reversals.
-        last_mss = mss_mod.find_last_mss_in_range(
-            df, sweep, end_idx=setup.chosen_gap.c3_idx
-        )
-        # Strategy still requires SOME MSS confirmation; if none exists, skip.
-        if last_mss is None:
-            continue
-        setup.mss = last_mss
         setups.append(setup)
     print(f"      {len(setups)} candidate setups")
 

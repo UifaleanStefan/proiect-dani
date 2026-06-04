@@ -19,13 +19,16 @@ from .. import config
 
 
 def load(path: str | Path, *, slice_start: str | None = None,
-         slice_end: str | None = None) -> pd.DataFrame:
+         slice_end: str | None = None, shift_minutes: int = 0) -> pd.DataFrame:
     """Load M1 CSV and return a DataFrame with tz-aware index.
 
     Args:
         path: Path to the TSV file.
         slice_start, slice_end: Optional ISO date strings (YYYY-MM-DD) to slice
             the DataFrame inclusively.
+        shift_minutes: Add this many minutes to every timestamp (e.g. 60 when the
+            broker data is 1h behind TradingView). Day/month/year rollover is handled
+            automatically. Prices and all other columns are untouched.
 
     Returns:
         pd.DataFrame indexed by tz-aware DatetimeIndex (Europe/Bucharest)
@@ -55,6 +58,11 @@ def load(path: str | Path, *, slice_start: str | None = None,
     dt_str = df["date"].astype(str) + " " + df["time"].astype(str)
     fmt = f"{config.CSV_DATE_FORMAT} {config.CSV_TIME_FORMAT}"
     dt = pd.to_datetime(dt_str, format=fmt)
+    # v0.7: shift every timestamp by `shift_minutes` (handles day/month/year rollover).
+    # Applied on the NAIVE datetime, before tz-localize, so DST is computed correctly
+    # for the corrected wall-clock time.
+    if shift_minutes:
+        dt = dt + pd.Timedelta(minutes=shift_minutes)
     # Localize as Europe/Bucharest. ambiguous='infer' handles DST transitions
     # (the broker server time also follows DST).
     dt = dt.dt.tz_localize(config.TIMEZONE, ambiguous="infer", nonexistent="shift_forward")
