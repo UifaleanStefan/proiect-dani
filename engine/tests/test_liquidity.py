@@ -24,32 +24,33 @@ def test_format_age():
 def test_find_sweeps_one_day_smoke():
     df = csv_loader.load(REAL_CSV, slice_start="2026-04-15", slice_end="2026-04-15")
     events = liquidity.find_sweep_events(df)
-    # Expect a non-trivial number of sweep events on a normal trading day
-    assert len(events) > 0, "No sweep events detected at all"
-    # Sanity on event shape
+    # v0.6: HOD/LOD only — at most one event per day
+    assert len(events) <= 1, "v0.6 emits at most one HOD/LOD touch per day"
     for e in events:
         assert e.direction in ("buy", "sell")
-        assert e.liquidity_type in ("HOD", "LOD", "Local", "Major")
-        assert e.sweep_kind in ("wick", "body")
+        assert e.liquidity_type in ("HOD", "LOD")  # v0.6: only these
         assert e.sweep_idx > e.pivot_idx
         assert e.age >= pd.Timedelta(0)
 
 
 @pytest.mark.skipif(not REAL_CSV.exists(), reason="Real CSV not available")
-def test_hod_lod_emitted_on_trading_day():
-    """At least one HOD or LOD should be detected on any normal trading day."""
-    df = csv_loader.load(REAL_CSV, slice_start="2026-04-15", slice_end="2026-04-17")
+def test_only_hod_lod_types():
+    """v0.6: every event must be HOD or LOD — no Local/Major."""
+    df = csv_loader.load(REAL_CSV, slice_start="2026-04-01", slice_end="2026-04-30")
     events = liquidity.find_sweep_events(df)
     types = {e.liquidity_type for e in events}
-    # We don't strictly require HOD/LOD to be hit every day, but Local should always exist
-    assert "Local" in types or "HOD" in types or "LOD" in types
+    assert types.issubset({"HOD", "LOD"}), f"unexpected types: {types}"
 
 
 @pytest.mark.skipif(not REAL_CSV.exists(), reason="Real CSV not available")
-def test_classification_age_consistency():
-    """A 'Local' event should have age >= 3h OR be marked as a fresh-pivot Local."""
-    df = csv_loader.load(REAL_CSV, slice_start="2026-04-01", slice_end="2026-04-10")
+def test_one_event_per_day_and_touch_window():
+    """At most one event per calendar day, and each touch is in 10:00..12:00 local."""
+    import collections
+    df = csv_loader.load(REAL_CSV, slice_start="2026-04-01", slice_end="2026-04-30")
     events = liquidity.find_sweep_events(df)
-    # Just make sure we have a healthy mix and no negative ages
+    per_day = collections.Counter(e.sweep_time.tz_convert("Europe/Bucharest").date() for e in events)
+    assert all(c <= 1 for c in per_day.values()), "more than one event in a day"
     for e in events:
+        local = e.sweep_time.tz_convert("Europe/Bucharest")
+        assert 10 <= local.hour < 12, f"touch outside 10:00-12:00: {local}"
         assert e.age >= pd.Timedelta(0)

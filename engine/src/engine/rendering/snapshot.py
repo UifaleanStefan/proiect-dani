@@ -347,73 +347,59 @@ def render_trade(df: pd.DataFrame, outcome: TradeOutcome, out_path: Path) -> Non
 
 
 def render_liquidity(df: pd.DataFrame, outcome: TradeOutcome, out_path: Path) -> None:
-    """Render a wider context view showing where the liquidity formed and was swept.
-    No execution annotations — just the sweep story."""
+    """v0.6 liquidity context: the overnight window strictly from
+    prev-day 22:55 -> touch-day 10:05, showing BOTH the HOD and LOD levels.
+    The level that the trade was taken on is highlighted."""
+    from ..detectors.liquidity import _session_hod_lod  # local import to avoid cycle
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
     sweep = outcome.setup.displacement.sweep
 
-    pad_before = 30
-    pad_after = 20
-    window_start = max(0, sweep.pivot_idx - pad_before)
-    window_end = min(len(df) - 1, sweep.sweep_idx + pad_after)
-    window = df.iloc[window_start : window_end + 1]
+    # --- Time window: 22:55 prev day -> 10:05 touch day ---
+    touch_local = sweep.sweep_time.tz_convert(config.TIMEZONE)
+    end_h, end_m = (int(x) for x in config.LIQ_PHOTO_END.split(":"))
+    photo_end = pd.Timestamp(touch_local.date(), tz=config.TIMEZONE) + pd.Timedelta(
+        hours=end_h, minutes=end_m
+    )
+    # 22:55 of the previous day == photo_end - 11h10m (10:05 - 22:55 = 11h10m)
+    photo_start = photo_end - pd.Timedelta(hours=11, minutes=10)
+
+    window = df.loc[(df.index >= photo_start) & (df.index <= photo_end)]
+    if len(window) < 3:
+        # Fallback to a candle-count window if the time slice is too sparse
+        a = max(0, sweep.pivot_idx - 30)
+        b = min(len(df) - 1, sweep.pivot_idx + 30)
+        window = df.iloc[a : b + 1]
     n = len(window)
 
     fig, ax = _setup_figure(window, figsize=(12, 6))
 
-    def rel(idx: int) -> int:
-        return idx - window_start
+    # --- Compute both HOD and LOD for the touch day ---
+    day_ts = pd.Timestamp(touch_local.date())
+    hod, lod = _session_hod_lod(df, day_ts)
+    hod_price = hod[1] if hod is not None else None
+    lod_price = lod[1] if lod is not None else None
+    touched_is_hod = sweep.direction == "sell"  # sell came from HOD touch
 
-    pivot_x = rel(sweep.pivot_idx)
-    sweep_x = rel(sweep.sweep_idx)
+    def draw_level(price, label, highlighted):
+        if price is None:
+            return
+        col = LIQ_LINE if highlighted else "#5C6470"
+        lw = 1.6 if highlighted else 1.0
+        ax.axhline(price, color=col, linewidth=lw,
+                   linestyle="-" if highlighted else "--", zorder=3, alpha=0.95 if highlighted else 0.6)
+        ax.text(n - 0.5, price, f"  {label} {price:.1f}",
+                color=col, fontsize=9, va="center",
+                fontweight="bold" if highlighted else "normal")
 
-    # Truncated liquidity line (pivot → sweep) at body display level
-    ax.plot(
-        [pivot_x - 0.5, sweep_x + 0.5],
-        [sweep.display_price, sweep.display_price],
-        color=LIQ_LINE,
-        linewidth=1.4,
-        zorder=3,
-    )
-    if 0 <= pivot_x < n:
-        ax.annotate(
-            f"Liq. {sweep.liquidity_type}",
-            xy=(pivot_x + 1, sweep.display_price),
-            xytext=(8, 10 if sweep.direction == "sell" else -16),
-            textcoords="offset points",
-            fontsize=10, fontweight="bold", color=LIQ_LINE,
-        )
+    draw_level(hod_price, "HOD", touched_is_hod)
+    draw_level(lod_price, "LOD", not touched_is_hod)
 
-    # Touch marker — small "X" at the touch candle (v0.5)
-    if 0 <= sweep_x < n:
-        sweep_candle = window.iloc[sweep_x]
-        sweep_y = (
-            float(sweep_candle["high"]) if sweep.direction == "sell"
-            else float(sweep_candle["low"])
-        )
-        ax.plot(sweep_x, sweep_y,
-                marker="X", markersize=10,
-                markerfacecolor=DOWN if sweep.direction == "sell" else UP,
-                markeredgecolor=BG,
-                markeredgewidth=1.4,
-                zorder=4)
-        ax.annotate(
-            f"Touch ({sweep.sweep_kind})",
-            xy=(sweep_x, sweep_y),
-            xytext=(8, -16 if sweep.direction == "sell" else 12),
-            textcoords="offset points",
-            fontsize=9, fontweight="bold",
-            color=DOWN if sweep.direction == "sell" else UP,
-        )
-
-    # Title
-    pivot_local = sweep.pivot_time.tz_convert(config.TIMEZONE)
-    sweep_local = sweep.sweep_time.tz_convert(config.TIMEZONE)
+    # --- Title ---
     title = (
         f"{config.MARKET_LABEL} · Liquidity context   "
         f"{sweep.liquidity_type} {sweep.direction.upper()}   "
-        f"formed {pivot_local.strftime('%m-%d %H:%M')}  "
-        f"→ touched {sweep_local.strftime('%m-%d %H:%M')}"
+        f"overnight {photo_start.strftime('%m-%d %H:%M')} -> {photo_end.strftime('%m-%d %H:%M')}"
     )
     _set_title(ax, title)
 

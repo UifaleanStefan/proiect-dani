@@ -344,38 +344,73 @@ def _classify_v05(
 
 
 def find_sweep_events(df: pd.DataFrame) -> list[SweepEvent]:
-    """v0.5: emit a SweepEvent for each LIQUIDITY TOUCH (no longer requires
-    price to fully cross the level).
+    """v0.6: HOD/LOD-ONLY strategy. Emit AT MOST ONE event per day — the
+    first of {HOD, LOD} that is TOUCHED (>=, no sweep needed) in the
+    10:00..12:00 window. If neither is touched by 12:00, the day is skipped.
 
-    Combines:
-      - Qualitative liquidity levels (find_liquidity_levels at major + local tier)
-      - HOD/LOD special-case events (unchanged from prior versions)
-    Then sorts by sweep_idx and de-duplicates levels touched in the same candle.
+    HOD/LOD are the extremes of the overnight window
+    [previous-day 22:59 .. current-day 09:59] (see `_session_hod_lod`).
+
+    The Local/Major detection (find_liquidity_levels / find_touch_events) is
+    intentionally NOT called here — those concepts are removed from the active
+    strategy (functions kept for reference only).
     """
     if "atr" not in df.columns:
         df = swings.annotate_atr(df)
-
     n = len(df)
     if n == 0:
         return []
+    return _find_hod_lod_touch_events(df)
 
-    # 1. Major-tier levels (stricter, evaluated first so they take precedence)
-    major_levels = find_liquidity_levels(df, tier="major")
-    # 2. Local-tier levels
-    local_levels = find_liquidity_levels(df, tier="local")
-    # Combine (dedupe identical pivots — prefer major)
-    seen_pivots = {(l.pivot_idx, l.direction) for l in major_levels}
-    combined = list(major_levels) + [
-        l for l in local_levels if (l.pivot_idx, l.direction) not in seen_pivots
-    ]
-    events: list[SweepEvent] = find_touch_events(df, combined)
 
-    # 3. HOD/LOD events from previous logic
-    events.extend(_find_hod_lod_events(df))
+def _find_hod_lod_touch_events(df: pd.DataFrame) -> list[SweepEvent]:
+    """One event per day: first HOD/LOD touch in 10:00..12:00."""
+    events: list[SweepEvent] = []
+    times_local = df.index.tz_convert(config.TIMEZONE)
+    high = df["high"].to_numpy()
+    low = df["low"].to_numpy()
 
-    # Sort + annotate additional liquidity
+    touch_start = config.HOD_LOD_FORMATION_END_HOUR     # 10
+    touch_end = config.HOD_LOD_SWEEP_DEADLINE_HOUR       # 12
+
+    days = pd.unique(df.index.normalize())
+    for d in days:
+        d_ts = pd.Timestamp(d)
+        hod, lod = _session_hod_lod(df, d_ts)
+        if hod is None and lod is None:
+            continue
+        hod_idx, hod_price = hod if hod is not None else (None, None)
+        lod_idx, lod_price = lod if lod is not None else (None, None)
+
+        # Iterate candles of THIS day in the 10:00..12:00 window, in order.
+        day_date = d_ts.date()
+        # Build a boolean mask once for this day's touch window
+        # times_local.date / .hour on a DatetimeIndex return numpy arrays already
+        day_mask = (
+            (times_local.date == day_date)
+            & (times_local.hour >= touch_start)
+            & (times_local.hour < touch_end)
+        )
+        day_positions = np.nonzero(np.asarray(day_mask))[0]
+        if day_positions.size == 0:
+            continue
+
+        first_event = None
+        for j in day_positions:
+            # HOD touch (sell) — price reaches the high
+            if hod_idx is not None and j > hod_idx and high[j] >= hod_price:
+                first_event = _make_event(df, int(j), df.index[j], "sell",
+                                          hod_price, hod_idx, "HOD")
+                break
+            # LOD touch (buy) — price reaches the low
+            if lod_idx is not None and j > lod_idx and low[j] <= lod_price:
+                first_event = _make_event(df, int(j), df.index[j], "buy",
+                                          lod_price, lod_idx, "LOD")
+                break
+        if first_event is not None:
+            events.append(first_event)
+
     events.sort(key=lambda e: e.sweep_idx)
-    events = _annotate_additional_liquidity(events)
     return events
 
 
@@ -598,15 +633,9 @@ def _make_event(df: pd.DataFrame, sweep_idx: int, sweep_time, direction: str,
                 level: float, pivot_idx: int, liquidity_type: str) -> SweepEvent:
     candle = df.iloc[sweep_idx]
     kind = _classify_sweep_kind(candle, level, direction)
-    pivot = df.iloc[pivot_idx]
-    # Body level for cleaner visual display: top-of-body for high pivots,
-    # bottom-of-body for low pivots. Used by snapshot rendering only.
-    if direction == "sell":
-        # High was swept — display at body top of pivot (max of open/close)
-        display_price = float(max(pivot["open"], pivot["close"]))
-    else:
-        # Low was swept — display at body bottom of pivot (min of open/close)
-        display_price = float(min(pivot["open"], pivot["close"]))
+    # v0.6: for HOD/LOD the level IS the exact overnight extreme (wick) — draw
+    # the line right at that price (institutions target the precise high/low).
+    display_price = float(level)
     return SweepEvent(
         sweep_idx=sweep_idx,
         sweep_time=sweep_time,

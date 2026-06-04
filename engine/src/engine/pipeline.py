@@ -107,8 +107,9 @@ def run(
         setup = sc_mod.classify(df, disp, gaps)
         if setup is None:
             continue
-        # Find LAST MSS confirmation between sweep and the chosen-gap completion.
-        # This may be None — we still keep the setup; MSS shows up as "—" then.
+        # MSS must confirm the reversal BY the time the chosen gap completes
+        # (i.e. during the displacement) — otherwise it's hindsight, not a
+        # real confirmation. This keeps entries to genuine reversals.
         last_mss = mss_mod.find_last_mss_in_range(
             df, sweep, end_idx=setup.chosen_gap.c3_idx
         )

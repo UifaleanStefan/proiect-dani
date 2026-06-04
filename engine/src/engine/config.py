@@ -7,14 +7,15 @@ from dataclasses import dataclass, field
 TIMEZONE = "Europe/Bucharest"
 
 # Trading windows in local time (HH:MM, inclusive)
+# v0.6: morning window starts at 10:00 so post-HOD/LOD-touch setups aren't rejected.
 TRADING_WINDOWS = [
-    ("10:15", "16:15"),  # London → early NY
+    ("10:00", "16:15"),  # London → early NY
     ("16:45", "22:30"),  # NY full session
 ]
 
 # Sessions for labelling (entry time → label)
 SESSION_BOUNDS = {
-    "London": ("10:15", "16:45"),  # before NY open
+    "London": ("10:00", "16:45"),  # before NY open
     "New York": ("16:45", "22:30"),  # after NY open
 }
 
@@ -41,10 +42,14 @@ MAJOR_PROMINENCE_ATR = 2.5
 # if the wick above body / below body > this fraction of ATR, treat as spike.
 LIQ_SPIKE_BODY_GAP_ATR = 0.6
 
-# HOD/LOD window (the extreme is set between previous-day-last-candle and 10:00,
-# must be liquidated 10:00..12:00 to count as HOD/LOD; later sweeps -> Local)
+# HOD/LOD window (v0.6 — the ONLY liquidity source):
+#   - Formation: extreme between previous-day-last-candle (22:59) and 09:59 inclusive
+#   - Touch: must be touched (>=, no sweep needed) in 10:00..12:00; else skip the day
 HOD_LOD_FORMATION_END_HOUR = 10  # extremes form before 10:00
-HOD_LOD_SWEEP_DEADLINE_HOUR = 12  # sweep must happen before 12:00
+HOD_LOD_SWEEP_DEADLINE_HOUR = 12  # touch must happen before 12:00
+# Liquidity-context photo window (time-of-day slice, prev-day -> touch-day)
+LIQ_PHOTO_START = "22:55"  # on the previous day
+LIQ_PHOTO_END = "10:05"    # on the touch day
 
 # Swing point detection: lookback candles on each side that must be exceeded
 SWING_LOOKBACK = 3
@@ -58,11 +63,13 @@ MSS_VALID_WINDOW = 10  # candles on each side
 MSS_LOOKFORWARD_LIMIT = 30
 
 # Displacement: candle is "prominent" if range >= ATR_MULTIPLIER * ATR(ATR_PERIOD)
+# v0.6: looser so HOD/LOD reversals (which can take longer + be less explosive than
+# swing-pivot sweeps) are captured. Tuned on 2026 slice: 90/1.2 surfaces ~30/64 touches.
 ATR_PERIOD = 14
-DISPLACEMENT_ATR_MULTIPLIER = 1.5
+DISPLACEMENT_ATR_MULTIPLIER = 1.2
 DISPLACEMENT_MIN_CANDLES = 2
-DISPLACEMENT_MAX_PAUSE = 1  # max 1 non-prominent candle between prominent ones
-DISPLACEMENT_LOOKFORWARD_LIMIT = 30
+DISPLACEMENT_MAX_PAUSE = 2  # allow up to 2 non-prominent candles between prominent ones
+DISPLACEMENT_LOOKFORWARD_LIMIT = 90  # look up to 90 min after the touch
 
 # Setup execution
 TP_RR_RATIO = 2.0  # fixed 1:2 RR, no exceptions
