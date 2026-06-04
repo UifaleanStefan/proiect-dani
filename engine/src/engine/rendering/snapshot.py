@@ -33,9 +33,9 @@ from ..simulator.trade import TradeOutcome
 
 
 # --- Colors ---------------------------------------------------------------------
-BG = "#131722"
-PANEL = "#1E222D"
-GRID = "#2A2E39"
+BG = "#000000"           # pure black background (v0.8 — no chrome)
+PANEL = "#000000"
+GRID = "#000000"         # grid disabled entirely (see _STYLE rc + _setup_figure)
 TEXT = "#D1D4DC"
 TEXT_MUTED = "#787B86"
 UP = "#26A69A"
@@ -70,10 +70,11 @@ _STYLE = mpf.make_mpf_style(
         "axes.labelcolor": TEXT_MUTED,
         "xtick.color": TEXT_MUTED,
         "ytick.color": TEXT_MUTED,
-        "axes.edgecolor": GRID,
+        "axes.edgecolor": "#000000",
         "axes.facecolor": BG,
         "figure.facecolor": BG,
         "savefig.facecolor": BG,
+        "axes.grid": False,        # v0.8 — no grid lines
         "font.size": 9,
         "text.color": TEXT,
     },
@@ -103,7 +104,9 @@ def _setup_figure(window: pd.DataFrame, *, figsize=(12, 7)):
         datetime_format="%H:%M",
         xrotation=0,
     )
-    return fig, axes[0]
+    ax = axes[0]
+    ax.grid(False)  # v0.8 — force grid off (nightclouds base re-enables it)
+    return fig, ax
 
 
 def _set_title(ax, text: str):

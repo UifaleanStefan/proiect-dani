@@ -8,13 +8,7 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import type {
-  DEFAULT_FILTER,
-  Manifest,
-  StatsSummary,
-  Trade,
-  TradeFilter,
-} from "../types";
+import type { Manifest, StatsSummary, Trade, TradeFilter } from "../types";
 import { DEFAULT_FILTER as DEFAULT } from "../types";
 
 const POLL_MS = 4000;

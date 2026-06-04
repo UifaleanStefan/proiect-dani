@@ -30,6 +30,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--shift-minutes", type=int, default=0,
                    help="Add N minutes to every CSV timestamp before processing "
                         "(use 60 when broker data is 1h behind TradingView).")
+    p.add_argument("--export-journal", action="store_true",
+                   help="Export manual-journal events (HOD/LOD grabs + OHLC windows) "
+                        "to <out>/journal for the React journaling page.")
     return p
 
 
@@ -46,6 +49,7 @@ def main(argv: list[str] | None = None) -> int:
         news_window_days=args.news_window_days,
         publish_to=args.publish_to,
         shift_minutes=args.shift_minutes,
+        export_journal=args.export_journal,
     )
     print()
     print(f"DONE: {summary['n_trades']} trades written")

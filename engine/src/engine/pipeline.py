@@ -16,7 +16,7 @@ from .detectors import setup_classifier as sc_mod
 from .detectors import swings as sw_mod
 from .filters import news_filter as nf_mod
 from .filters import schedule as sched_mod
-from .io import csv_loader, news_scraper, result_writer
+from .io import csv_loader, journal_writer, news_scraper, result_writer
 from .narrative import info_text
 from .rendering import snapshot as snap_mod
 from .simulator import trade as sim_mod
@@ -65,6 +65,7 @@ def run(
     news_window_days: int = 180,
     publish_to: str | Path | None = None,
     shift_minutes: int = 0,
+    export_journal: bool = False,
 ) -> dict:
     """Run the engine end-to-end. Returns summary dict and writes result.json."""
     out_dir = Path(out_dir)
@@ -92,6 +93,10 @@ def run(
     print("[3/7] Detecting liquidity sweeps")
     sweeps = liq_mod.find_sweep_events(df)
     print(f"      {len(sweeps)} sweep events")
+
+    if export_journal:
+        n_journal = journal_writer.export(df, sweeps, out_dir)
+        print(f"      journal: {n_journal} events + OHLC windows -> {out_dir / 'journal'}")
 
     print("[4/7] Building setups (displacement + FVG + classifier)")
     news = nf_mod.load_news(news_path) if news_path else []
@@ -209,6 +214,19 @@ def _publish_to_react(run_dir: Path, target_dir: Path, trade_dicts: list[dict]) 
             p.unlink(missing_ok=True)
         for p in snaps_src.glob("*.png"):
             shutil.copy2(p, snaps_target / p.name)
+
+    # Copy the manual-journal export (events.json + candles/*) if this run produced one
+    journal_src = run_dir / "journal"
+    if journal_src.exists():
+        journal_target = target_dir / "journal"
+        candles_target = journal_target / "candles"
+        candles_target.mkdir(parents=True, exist_ok=True)
+        # Wipe stale candle windows so removed/renamed events don't linger
+        for p in candles_target.glob("*.json"):
+            p.unlink(missing_ok=True)
+        shutil.copy2(journal_src / "events.json", journal_target / "events.json")
+        for p in (journal_src / "candles").glob("*.json"):
+            shutil.copy2(p, candles_target / p.name)
 
     # Write a small manifest with mtime for HMR / polling
     import json as _json

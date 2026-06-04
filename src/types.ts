@@ -71,3 +71,70 @@ export const DEFAULT_FILTER: TradeFilter = {
   liquidity: "all",
   withNews: false,
 };
+
+/* ------------------------------------------------------------------ *
+ * Manual journal (v0.8): hand-marked setups on liquidity-grab charts  *
+ * ------------------------------------------------------------------ */
+
+/** Strategy constants embedded by the engine so the UI's outcome-sim stays in sync. */
+export type JournalMeta = {
+  market: string;
+  timezone: string;
+  tpRr: number;
+  beRr: number;
+  slBuffer: number;
+  slRefPrice: number;
+  slMinAtRef: number;
+  slMaxAtRef: number;
+  slQuantizeStep: number;
+  minFvgSize: number;
+  generatedMs: number;
+  count: number;
+};
+
+/** One HOD/LOD liquidity grab (10:00–12:00) the user journals by hand. */
+export type JournalEvent = {
+  id: string;
+  date: string; // YYYY-MM-DD (local)
+  ddMm: string;
+  year: string;
+  sweepTime: string; // HH:MM local
+  sweepMs: number;
+  direction: "buy" | "sell";
+  liquidity: "HOD" | "LOD";
+  level: number; // the grabbed level (exact)
+  hodPrice: number;
+  lodPrice: number;
+  sweepIdx: number; // sweep candle position within the window
+  candles: number;
+};
+
+export type JournalEventsFile = { meta: JournalMeta; events: JournalEvent[] };
+
+export type Candle = { t: number; o: number; h: number; l: number; c: number };
+
+export type Outcome = "Win" | "Loss" | "Break Even" | "Open";
+
+/** Hand-marked geometry + computed measurements, persisted per event. */
+export type Annotation = {
+  id?: string;
+  fvg?: { top: number; bottom: number } | null;
+  entry?: number | null;
+  sl?: number | null;
+  tp?: number | null;
+  mss?: { idx: number; kind: "Body" | "Wick" } | null;
+  entryIdx?: number | null;
+  note?: string;
+  // denormalized context + computed (filled at save time for /api/journal/index)
+  date?: string;
+  ddMm?: string;
+  year?: string;
+  liquidity?: string;
+  direction?: string;
+  level?: number;
+  fvgSize?: number | null;
+  slSize?: number | null;
+  rr?: number | null;
+  outcome?: Outcome | null;
+  updatedMs?: number;
+};
