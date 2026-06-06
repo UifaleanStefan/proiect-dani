@@ -295,7 +295,7 @@ export function Chart({
         <svg
           ref={svgRef}
           className="absolute inset-0 w-full h-full"
-          style={{ pointerEvents: tool === "select" ? "none" : "auto", cursor: tool === "select" ? "default" : "crosshair" }}
+          style={{ zIndex: 5, pointerEvents: tool === "select" ? "none" : "auto", cursor: tool === "select" ? "default" : "crosshair" }}
           onPointerDown={onSvgDown}
         >
           {segs.map((s) => renderSeg(s, startEdit))}
