@@ -51,15 +51,18 @@ export type JournalEventsFile = { meta: JournalMeta; events: JournalEvent[] };
 export type Anchor = { time: number; price: number };
 
 export type MssDrawing = { type: "mss"; id: string; a: Anchor; b: Anchor };
-export type FvgDrawing = { type: "fvg"; id: string; p1: Anchor; p2: Anchor };
-export type FibDrawing = { type: "fib"; id: string; hi: Anchor; lo: Anchor };
+// Box-like shapes carry an explicit time-extent [t0,t1] (ms) so they are finite and
+// resizable from the right edge (width) independently of their price height.
+export type FvgDrawing = { type: "fvg"; id: string; t0: number; t1: number; top: number; bottom: number };
+export type FibDrawing = { type: "fib"; id: string; t0: number; t1: number; hi: number; lo: number };
 export type PositionDrawing = {
   type: "position";
   id: string;
   direction: "buy" | "sell";
   entry: number;
   sl: number;
-  time: number; // left-edge anchor (ms)
+  t0: number; // left edge (ms)
+  t1: number; // right edge (ms)
 };
 export type Drawing = MssDrawing | FvgDrawing | FibDrawing | PositionDrawing;
 export type DrawingType = Drawing["type"];

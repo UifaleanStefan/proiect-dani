@@ -18,7 +18,7 @@ import type {
   Manual,
 } from "../types";
 import { buildTimes } from "../lib/chartCoords";
-import { buildAnnotation } from "../lib/drawings";
+import { buildAnnotation, normalizeDrawings } from "../lib/drawings";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 type Status = "none" | "partial" | "done";
@@ -159,7 +159,7 @@ export function JournalProvider({ children }: { children: ReactNode }) {
         const r = await fetch(`/api/journal/load/${selectedId}`, { cache: "no-store" });
         const a: Annotation = r.ok ? await r.json() : {};
         if (cancelled) return;
-        const dr = a.drawings ?? [];
+        const dr = normalizeDrawings(a.drawings);
         const mn: Manual = { mssKind: a.mssKind ?? null, setup: a.setup ?? null, news: a.news ?? null };
         drawingsRef.current = dr; manualRef.current = mn;
         setDrawingsState(dr); setManualState(mn); setSaveState("idle");
@@ -248,21 +248,74 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   const exportXlsx = useCallback(async () => {
     const r = await fetch("/api/journal/index", { cache: "no-store" });
     const idx: Annotation[] = r.ok ? await r.json() : [];
-    const rows = idx
+    const items = idx
       .filter((a) => a.outcome || (a.drawings && a.drawings.length) || a.setup)
-      .sort((a, b) => (a.updatedMs ?? 0) - (b.updatedMs ?? 0))
-      .map((a) => ({
-        Market: a.market ?? "", Date: a.date ?? "", Time: a.time ?? "",
-        Order: a.order ?? "", Liquidity: a.liquidity ?? "", "Liquidity Age": a.ageStr ?? "",
-        "SL Points": a.slPoints ?? "", "R:R": a.rr ?? "", Result: a.outcome ?? "",
-        Session: a.session ?? "", "ATH %": a.athPct ?? "", MSS: a.mssKind ?? "",
-        Setup: a.setup ?? "", News: a.news ?? "",
-      }));
-    const XLSX = await import("xlsx");
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Journal");
-    XLSX.writeFile(wb, `journal_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      .sort((a, b) => (a.updatedMs ?? 0) - (b.updatedMs ?? 0));
+
+    const ExcelJS = (await import("exceljs")).default;
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("Journal");
+    ws.columns = [
+      { header: "Chart", key: "chart", width: 48 },
+      { header: "Market", key: "market", width: 11 },
+      { header: "Date", key: "date", width: 12 },
+      { header: "Time", key: "time", width: 8 },
+      { header: "Order", key: "order", width: 8 },
+      { header: "Liquidity", key: "liquidity", width: 10 },
+      { header: "Liquidity Age", key: "age", width: 14 },
+      { header: "SL Points", key: "sl", width: 10 },
+      { header: "R:R", key: "rr", width: 7 },
+      { header: "Result", key: "result", width: 11 },
+      { header: "Session", key: "session", width: 11 },
+      { header: "ATH %", key: "ath", width: 9 },
+      { header: "MSS", key: "mss", width: 8 },
+      { header: "Setup", key: "setup", width: 14 },
+      { header: "News", key: "news", width: 18 },
+    ];
+    ws.getRow(1).font = { bold: true };
+    ws.views = [{ state: "frozen", ySplit: 1 }];
+
+    // Fetch one chart PNG → raw base64 (null if the trade was never opened/captured).
+    const fetchPhoto = async (id?: string): Promise<string | null> => {
+      if (!id) return null;
+      try {
+        const pr = await fetch(`/api/journal/photo/${id}`, { cache: "no-store" });
+        if (!pr.ok) return null;
+        const bytes = new Uint8Array(await pr.arrayBuffer());
+        let bin = "";
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return btoa(bin);
+      } catch { return null; }
+    };
+
+    for (const a of items) {
+      const row = ws.addRow({
+        market: a.market ?? "", date: a.date ?? "", time: a.time ?? "",
+        order: a.order ?? "", liquidity: a.liquidity ?? "", age: a.ageStr ?? "",
+        sl: a.slPoints ?? "", rr: a.rr ?? "", result: a.outcome ?? "",
+        session: a.session ?? "", ath: a.athPct ?? "", mss: a.mssKind ?? "",
+        setup: a.setup ?? "", news: a.news ?? "",
+      });
+      row.alignment = { vertical: "middle" };
+      const b64 = await fetchPhoto(a.id);
+      if (b64) {
+        row.height = 150; // ~200px tall for the embedded chart
+        const imgId = wb.addImage({ base64: `data:image/png;base64,${b64}`, extension: "png" });
+        ws.addImage(imgId, {
+          tl: { col: 0.04, row: row.number - 1 + 0.04 },
+          ext: { width: 330, height: 188 },
+        });
+      }
+    }
+
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `journal_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
   }, []);
 
   const value: Ctx = {

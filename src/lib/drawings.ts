@@ -28,6 +28,40 @@ export function newId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}_${_seq}`;
 }
 
+/** Default position width (ms) when none is drawn — ~40 candles on M1; user drags the right edge. */
+export const POS_DEFAULT_WIDTH_MS = 40 * 60_000;
+
+/**
+ * Normalize persisted drawings to the current model (finite time-extent {t0,t1}).
+ * Converts the legacy shapes — fvg {p1,p2}, fib {hi,lo} as anchors, position {time} —
+ * to the new {t0,t1,...} form so existing annotations keep rendering. Idempotent.
+ */
+export function normalizeDrawings(raw: unknown): Drawing[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Drawing[] = [];
+  for (const d of raw as Array<Record<string, unknown> & { type?: string }>) {
+    if (!d || typeof d !== "object") continue;
+    const id = String(d.id ?? "");
+    if (d.type === "mss") {
+      if (d.a && d.b) out.push(d as unknown as Drawing);
+    } else if (d.type === "fvg") {
+      if (typeof d.t0 === "number") { out.push(d as unknown as Drawing); continue; }
+      const p1 = d.p1 as { time: number; price: number } | undefined;
+      const p2 = d.p2 as { time: number; price: number } | undefined;
+      if (p1 && p2) out.push({ type: "fvg", id, t0: Math.min(p1.time, p2.time), t1: Math.max(p1.time, p2.time), top: Math.max(p1.price, p2.price), bottom: Math.min(p1.price, p2.price) });
+    } else if (d.type === "fib") {
+      if (typeof d.t0 === "number") { out.push(d as unknown as Drawing); continue; }
+      const hi = d.hi as { time: number; price: number } | undefined;
+      const lo = d.lo as { time: number; price: number } | undefined;
+      if (hi && lo && typeof hi === "object") out.push({ type: "fib", id, t0: Math.min(hi.time, lo.time), t1: Math.max(hi.time, lo.time), hi: Math.max(hi.price, lo.price), lo: Math.min(hi.price, lo.price) });
+    } else if (d.type === "position") {
+      if (typeof d.t0 === "number") { out.push(d as unknown as Drawing); continue; }
+      if (typeof d.time === "number") out.push({ type: "position", id, direction: d.direction as "buy" | "sell", entry: d.entry as number, sl: d.sl as number, t0: d.time, t1: (d.time as number) + POS_DEFAULT_WIDTH_MS });
+    }
+  }
+  return out;
+}
+
 /** Auto take-profit at fixed 1:2 RR from entry + SL. */
 export function positionTP(p: Pick<PositionDrawing, "direction" | "entry" | "sl">): number {
   const risk = Math.abs(p.entry - p.sl);
@@ -58,7 +92,7 @@ export function derivePosition(
     return { tp, slPoints: risk > 0 ? round1(risk) : null, rr: 2, outcome: null, entryIdx: null, valid: false };
   }
   const beRr = meta?.beRr ?? 1.4;
-  const anchorIdx = nearestIdx(times, p.time);
+  const anchorIdx = nearestIdx(times, p.t0);
   const fromIdx = Math.max(anchorIdx, ev.touchIdx ?? ev.sweepIdx ?? 0);
   const start = findEntryIdx(candles, fromIdx, p.direction, p.entry);
   let outcome: Outcome | null = "Open";

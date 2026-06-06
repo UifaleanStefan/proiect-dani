@@ -60,3 +60,5 @@ desktop.ini
 
 # manual-journal CSV upload temp files (engine scans then deletes)
 journal-data/uploads/
+# per-trade chart screenshots for the Excel export (regenerable, large)
+journal-data/photos/
