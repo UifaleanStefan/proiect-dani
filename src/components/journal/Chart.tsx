@@ -3,7 +3,7 @@ import {
   createChart, CandlestickSeries, ColorType, CrosshairMode, LineStyle,
   type IChartApi, type ISeriesApi, type Logical, type UTCTimestamp,
 } from "lightweight-charts";
-import { MousePointer2, Minus, Square, Ruler, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
+import { MousePointer2, Minus, Square, Ruler, TrendingUp, TrendingDown, Trash2, Eraser } from "lucide-react";
 import type { Anchor, Candle, Drawing, JournalEvent, JournalMeta } from "../../types";
 import { logicalToTime, timeToLogical } from "../../lib/chartCoords";
 import { newId, derivePosition } from "../../lib/drawings";
@@ -245,6 +245,10 @@ export function Chart({
     setLive(next); setSelId(null); onChange(next);
   }, [selId, onChange]);
 
+  const clearAllShapes = useCallback(() => {
+    setLive([]); setSelId(null); onChange([]);
+  }, [onChange]);
+
   // keyboard delete
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -280,12 +284,20 @@ export function Chart({
         ))}
         <div className="flex-1" />
         <button
-          title="Delete selected"
+          title="Delete selected (Del)"
           onClick={deleteSel}
           disabled={!selId}
           className="h-9 w-9 rounded-lg flex items-center justify-center text-[#e26d5c] disabled:opacity-30 hover:bg-white/5"
         >
           <Trash2 size={16} />
+        </button>
+        <button
+          title="Clear all drawings on this chart"
+          onClick={clearAllShapes}
+          disabled={live.length === 0}
+          className="h-9 w-9 rounded-lg flex items-center justify-center text-[#e26d5c] disabled:opacity-30 hover:bg-white/5"
+        >
+          <Eraser size={16} />
         </button>
       </div>
 
@@ -374,8 +386,9 @@ function computeShapes(
         out.push({ kind: "fvg", id: d.id, x: Math.min(xa, xb), y: Math.min(ya, yb), w: Math.abs(xb - xa), h: Math.abs(yb - ya), sel, size: r1(Math.abs(d.p1.price - d.p2.price)) });
       }
     } else if (d.type === "fib") {
-      const xL = X(d.hi.time), xR = X(d.lo.time), y0 = Y(d.hi.price), y100 = Y(d.lo.price), y50 = Y((d.hi.price + d.lo.price) / 2);
-      if (ok(xL) && ok(xR) && ok(y0) && ok(y50) && ok(y100)) out.push({ kind: "fib", id: d.id, xL: Math.min(xL, xR), xR: Math.max(xL, xR), y0, y50, y100, sel });
+      const xa = X(d.hi.time), xb = X(d.lo.time), y0 = Y(d.hi.price), y100 = Y(d.lo.price), y50 = Y((d.hi.price + d.lo.price) / 2);
+      // levels extend from the left anchor to the right edge (always full-width + clickable)
+      if (ok(xa) && ok(xb) && ok(y0) && ok(y50) && ok(y100)) out.push({ kind: "fib", id: d.id, xL: Math.min(xa, xb), xR: Math.max(Math.min(xa, xb) + 40, width - 4), y0, y50, y100, sel });
     } else if (d.type === "position") {
       const der = derivePosition(d, event, candles, times, meta);
       const x = X(d.time), yEntry = Y(d.entry), ySl = Y(d.sl), yTp = Y(der.tp);
@@ -398,8 +411,11 @@ function renderSeg(
   startEdit: (e: RPE, id: string, handle: string) => void,
 ) {
   const handle = (id: string, h: string, cx: number, cy: number) => (
-    <circle key={`${id}-${h}`} cx={cx} cy={cy} r={5} fill="#089981" stroke="#fff" strokeWidth={1}
-      style={{ pointerEvents: "auto", cursor: "grab" }} onPointerDown={(e) => startEdit(e, id, h)} />
+    <g key={`${id}-${h}`} style={{ cursor: "grab" }} onPointerDown={(e) => startEdit(e, id, h)}>
+      {/* fat invisible grab area */}
+      <circle cx={cx} cy={cy} r={13} fill="transparent" style={{ pointerEvents: "auto" }} />
+      <circle cx={cx} cy={cy} r={5.5} fill="#089981" stroke="#fff" strokeWidth={1.5} style={{ pointerEvents: "none" }} />
+    </g>
   );
 
   if (s.kind === "liq") {
@@ -432,7 +448,7 @@ function renderSeg(
       <g key={s.id}>
         <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke="rgba(255,255,255,0.5)" strokeWidth={1} />
         <polygon points={`${s.x2},${s.y2} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}`} fill="rgba(255,255,255,0.5)" />
-        <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke="transparent" strokeWidth={12}
+        <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke="transparent" strokeWidth={18}
           style={{ pointerEvents: "stroke", cursor: "move" }} onPointerDown={(e) => startEdit(e, s.id, "body")} />
         {s.sel && <>{handle(s.id, "a", s.x1, s.y1)}{handle(s.id, "b", s.x2, s.y2)}</>}
       </g>
@@ -452,7 +468,10 @@ function renderSeg(
     const row = (y: number, color: string, label: string) => (
       <g key={label}>
         <line x1={s.xL} y1={y} x2={s.xR} y2={y} stroke={color} strokeWidth={1} />
-        <text x={s.xR + 4} y={y + 3} fontSize={9.5} fill={color}>{label}</text>
+        {/* fat invisible grab area so every level is easy to click */}
+        <line x1={s.xL} y1={y} x2={s.xR} y2={y} stroke="transparent" strokeWidth={16}
+          style={{ pointerEvents: "stroke", cursor: "move" }} onPointerDown={(e) => startEdit(e, s.id, "body")} />
+        <text x={s.xR + 4} y={y + 3} fontSize={9.5} fill={color} style={{ pointerEvents: "none" }}>{label}</text>
       </g>
     );
     return (
@@ -460,8 +479,6 @@ function renderSeg(
         {row(s.y0, "#9aa0aa", "0%")}
         {row(s.y50, "#ff3b3b", "50%")}
         {row(s.y100, "#9aa0aa", "100%")}
-        <line x1={s.xL} y1={s.y0} x2={s.xL} y2={s.y100} stroke="transparent" strokeWidth={12}
-          style={{ pointerEvents: "stroke", cursor: "move" }} onPointerDown={(e) => startEdit(e, s.id, "body")} />
         {s.sel && <>{handle(s.id, "hi", s.xL, s.y0)}{handle(s.id, "lo", s.xL, s.y100)}</>}
       </g>
     );
@@ -477,9 +494,11 @@ function renderSeg(
         <line x1={s.x} y1={s.yTp} x2={s.right} y2={s.yTp} stroke="#089981" strokeWidth={1} />
         <line x1={s.x} y1={s.ySl} x2={s.right} y2={s.ySl} stroke="#ffffff" strokeWidth={1} />
         <text x={s.x + 6} y={(rewardTop + riskTop + riskH) / 2 + (rewardTop < riskTop ? -4 : 4)} fontSize={10.5} fill="#e7eaf0" style={{ pointerEvents: "none" }}>{s.label}</text>
-        {/* drag targets */}
-        <rect x={s.x} y={Math.min(rewardTop, riskTop)} width={Math.min(70, s.right - s.x)} height={rewardH + riskH} fill="transparent"
-          style={{ pointerEvents: "auto", cursor: "move" }} onPointerDown={(e) => startEdit(e, s.id, "body")} />
+        {/* drag targets — fat invisible lines so the entry/SL are easy to grab */}
+        <line x1={s.x} y1={s.yEntry} x2={s.right} y2={s.yEntry} stroke="transparent" strokeWidth={16}
+          style={{ pointerEvents: "stroke", cursor: "move" }} onPointerDown={(e) => startEdit(e, s.id, "body")} />
+        <line x1={s.x} y1={s.ySl} x2={s.right} y2={s.ySl} stroke="transparent" strokeWidth={16}
+          style={{ pointerEvents: "stroke", cursor: "ns-resize" }} onPointerDown={(e) => startEdit(e, s.id, "sl")} />
         {handle(s.id, "entry", s.x + 26, s.yEntry)}
         {handle(s.id, "sl", s.x + 26, s.ySl)}
       </g>
