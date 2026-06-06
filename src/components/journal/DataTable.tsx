@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import { useJournal } from "../../store/useJournal";
-import { athPct, derivePosition, primaryPosition } from "../../lib/drawings";
+import { athPct, derivePosition, fmtClock, primaryPosition } from "../../lib/drawings";
 import { slBand } from "../../lib/journalOutcome";
 import type { Outcome } from "../../types";
 
@@ -53,7 +53,9 @@ export function DataTable() {
       <div className="px-3 pt-2.5 pb-1 text-[10px] uppercase tracking-wide text-[#5f636c]">Auto · the bot fills</div>
       <Row label="Market">{ev.market}</Row>
       <Row label="Date">{`${ev.ddMm}/${ev.year}`}</Row>
-      <Row label="Time">{ev.sweepTime}</Row>
+      <Row label="Time (entry)">
+        {d.der?.entryIdx != null && candles?.[d.der.entryIdx] ? fmtClock(candles[d.der.entryIdx].t) : ev.sweepTime}
+      </Row>
       <Row label="Order">{d.order}</Row>
       <Row label="Liquidity">{ev.liquidity}</Row>
       <Row label="Liquidity age">{ev.age}</Row>

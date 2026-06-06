@@ -18,6 +18,10 @@ import { nearestIdx } from "./chartCoords";
 const round1 = (n: number) => Math.round(n * 10) / 10;
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+const _clock = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Bucharest", hour: "2-digit", minute: "2-digit" });
+/** HH:MM (market tz) for an epoch-ms candle time. */
+export const fmtClock = (ms: number) => _clock.format(new Date(ms));
+
 let _seq = 0;
 export function newId(prefix: string): string {
   _seq = (_seq + 1) % 1_000_000;
@@ -93,6 +97,9 @@ export function buildAnnotation(
   const order: "Buy" | "Sell" = (pos ? pos.direction : ev.direction) === "buy" ? "Buy" : "Sell";
   const entryForAth = pos?.entry ?? ev.level;
   const [dd, mm, yyyy] = [ev.ddMm.slice(0, 2), ev.ddMm.slice(3, 5), ev.year];
+  // Time = the entry candle (where price reaches the drawn entry), not the sweep time.
+  const entryIdx = der?.entryIdx ?? null;
+  const time = entryIdx != null && candles[entryIdx] ? fmtClock(candles[entryIdx].t) : ev.sweepTime;
 
   return {
     id: ev.id,
@@ -105,7 +112,7 @@ export function buildAnnotation(
     // denormalized auto / computed
     market: ev.market,
     date: `${dd}/${mm}/${yyyy}`,
-    time: ev.sweepTime,
+    time,
     order,
     liquidity: ev.liquidity,
     ageStr: ev.age,
