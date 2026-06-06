@@ -57,3 +57,6 @@ desktop.ini
 
 # ─── Claude / plan files (local dev) ─────────────────────────────────────────
 .claude/
+
+# manual-journal CSV upload temp files (engine scans then deletes)
+journal-data/uploads/

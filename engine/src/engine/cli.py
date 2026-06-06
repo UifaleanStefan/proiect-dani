@@ -33,6 +33,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--export-journal", action="store_true",
                    help="Export manual-journal events (HOD/LOD grabs + OHLC windows) "
                         "to <out>/journal for the React journaling page.")
+    p.add_argument("--journal-only", action="store_true",
+                   help="Scan ONLY for manual-journal grabs (skip the backtest, setups, "
+                        "simulation and snapshots). Fast path for CSV-upload scanning.")
+    p.add_argument("--market", default=None,
+                   help="Market label to tag journal events with (default DE30EUR). "
+                        "Use the instrument name when scanning other CSVs.")
     return p
 
 
@@ -50,6 +56,8 @@ def main(argv: list[str] | None = None) -> int:
         publish_to=args.publish_to,
         shift_minutes=args.shift_minutes,
         export_journal=args.export_journal,
+        journal_only=args.journal_only,
+        market=args.market,
     )
     print()
     print(f"DONE: {summary['n_trades']} trades written")

@@ -439,6 +439,82 @@ def _find_hod_lod_touch_events(df: pd.DataFrame) -> list[SweepEvent]:
     return events
 
 
+def find_journal_grabs(df: pd.DataFrame) -> list[SweepEvent]:
+    """v0.9 — manual-journal scan: emit EVERY HOD and LOD grab touched in 10:00..12:00
+    (up to TWO events per day), independent of the strategy's one-per-day / skip-day rule.
+
+    Same formation logic as `_find_hod_lod_touch_events` (overnight extreme + prev-day
+    carry-forward), but the HOD touch and the LOD touch are found independently so both
+    can be journaled. Vectorized O(n).
+    """
+    n = len(df)
+    if n == 0:
+        return []
+    if "atr" not in df.columns:
+        df = swings.annotate_atr(df)
+    events: list[SweepEvent] = []
+    times_local = df.index.tz_convert(config.TIMEZONE)
+    high = df["high"].to_numpy()
+    low = df["low"].to_numpy()
+    date_arr = np.asarray(times_local.date)
+    hour_arr = np.asarray(times_local.hour)
+    pos = np.arange(n)
+
+    touch_start = config.HOD_LOD_FORMATION_END_HOUR   # 10
+    touch_end = config.HOD_LOD_SWEEP_DEADLINE_HOUR    # 12
+
+    morning = hour_arr < touch_start
+    md = pd.DataFrame({
+        "d": date_arr[morning], "h": high[morning],
+        "l": low[morning], "p": pos[morning],
+    })
+    if md.empty:
+        return []
+    hod_rows = md.loc[md.groupby("d")["h"].idxmax()].set_index("d")
+    lod_rows = md.loc[md.groupby("d")["l"].idxmin()].set_index("d")
+    last_pos_per_day = pd.Series(pos, index=pd.Index(date_arr)).groupby(level=0).max()
+
+    win = (hour_arr >= touch_start) & (hour_arr < touch_end)
+    wd = pd.DataFrame({"d": date_arr[win], "p": pos[win]}).sort_values("p")
+    win_by_day: dict = {d: grp.to_numpy() for d, grp in wd.groupby("d")["p"]}
+
+    all_days = sorted(set(date_arr))
+    prev_day = None
+    for d in all_days:
+        if d not in hod_rows.index:
+            prev_day = d
+            continue
+        hr = hod_rows.loc[d]
+        lr = lod_rows.loc[d]
+        hod_idx, hod_price = int(hr["p"]), float(hr["h"])
+        lod_idx, lod_price = int(lr["p"]), float(lr["l"])
+        if prev_day is not None and prev_day in last_pos_per_day.index:
+            pl = int(last_pos_per_day.loc[prev_day])
+            if high[pl] > hod_price:
+                hod_idx, hod_price = pl, float(high[pl])
+            if low[pl] < lod_price:
+                lod_idx, lod_price = pl, float(low[pl])
+
+        hod_event = None
+        lod_event = None
+        for j in win_by_day.get(d, ()):  # in time order
+            j = int(j)
+            if hod_event is None and j > hod_idx and high[j] >= hod_price:
+                hod_event = _make_event(df, j, df.index[j], "sell", hod_price, hod_idx, "HOD")
+            if lod_event is None and j > lod_idx and low[j] <= lod_price:
+                lod_event = _make_event(df, j, df.index[j], "buy", lod_price, lod_idx, "LOD")
+            if hod_event is not None and lod_event is not None:
+                break
+        if hod_event is not None:
+            events.append(hod_event)
+        if lod_event is not None:
+            events.append(lod_event)
+        prev_day = d
+
+    events.sort(key=lambda e: e.sweep_idx)
+    return events
+
+
 def _find_hod_lod_events(df: pd.DataFrame) -> list[SweepEvent]:
     """Detect HOD/LOD sweeps (unchanged from prior versions)."""
     n = len(df)

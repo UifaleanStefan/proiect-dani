@@ -66,6 +66,8 @@ def run(
     publish_to: str | Path | None = None,
     shift_minutes: int = 0,
     export_journal: bool = False,
+    journal_only: bool = False,
+    market: str | None = None,
 ) -> dict:
     """Run the engine end-to-end. Returns summary dict and writes result.json."""
     out_dir = Path(out_dir)
@@ -85,6 +87,16 @@ def run(
                          shift_minutes=shift_minutes)
     print(f"      {len(df):,} candles, {df.index[0]} -> {df.index[-1]}")
 
+    # Fast path: scan only for manual-journal grabs (skip the strategy/backtest/snapshots).
+    if journal_only:
+        print("[journal-only] Exporting HOD/LOD grabs (10:00-12:00) for manual journaling")
+        n_journal = journal_writer.export(df, out_dir, market=market)
+        print(f"      {n_journal} grabs exported -> {out_dir / 'journal'}")
+        if publish_to:
+            _publish_to_react(out_dir, Path(publish_to), [])
+        return {"n_trades": 0, "n_journal": n_journal,
+                "result_path": "", "summary_path": ""}
+
     print("[2/7] Annotating swings + ATR + daily bias")
     df = sw_mod.annotate_valid_swings(df)
     df = sw_mod.annotate_atr(df)
@@ -95,8 +107,8 @@ def run(
     print(f"      {len(sweeps)} sweep events")
 
     if export_journal:
-        n_journal = journal_writer.export(df, sweeps, out_dir)
-        print(f"      journal: {n_journal} events + OHLC windows -> {out_dir / 'journal'}")
+        n_journal = journal_writer.export(df, out_dir, market=market)
+        print(f"      journal: {n_journal} grabs + OHLC windows -> {out_dir / 'journal'}")
 
     print("[4/7] Building setups (displacement + FVG + classifier)")
     news = nf_mod.load_news(news_path) if news_path else []

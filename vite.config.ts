@@ -2,6 +2,7 @@ import { defineConfig, type Plugin, type Connect } from 'vite'
 import react from '@vitejs/plugin-react'
 import fs from 'node:fs'
 import path from 'node:path'
+import { spawn } from 'node:child_process'
 import type { ServerResponse } from 'node:http'
 
 // Manual-journal annotations live OUTSIDE public/ (so saving doesn't trigger an HMR
@@ -31,6 +32,46 @@ function journalApi(): Plugin {
     if (!url.startsWith('/api/journal/')) return next()
     try {
       fs.mkdirSync(ANN_DIR, { recursive: true })
+
+      // POST /api/journal/scan?market=&shift=  — raw CSV body → spawn the engine
+      // (journal-only) to scan it, publish the grabs, and return the count.
+      if (req.method === 'POST' && url.startsWith('/api/journal/scan')) {
+        const u = new URL(url, 'http://localhost')
+        const market = (u.searchParams.get('market') || 'MARKET').replace(/[^0-9A-Za-z_-]/g, '') || 'MARKET'
+        const shift = String(parseInt(u.searchParams.get('shift') || '0', 10) || 0)
+        const root = process.cwd()
+        const uploads = path.resolve(root, 'journal-data', 'uploads')
+        fs.mkdirSync(uploads, { recursive: true })
+        const tmpCsv = path.join(uploads, `${market}_${Date.now()}.csv`)
+        const ws = fs.createWriteStream(tmpCsv)
+        ws.on('error', () => json(res, 500, { error: 'failed to write upload' }))
+        ws.on('finish', () => {
+          const py = path.resolve(root, 'engine', '.venv', 'Scripts', 'python.exe')
+          const pub = path.resolve(root, 'public', 'engine-data')
+          const out = path.resolve(root, 'engine', 'data', 'runs', `upload_${market}`)
+          const args = ['-m', 'engine', '--csv', tmpCsv, '--market', market,
+            '--shift-minutes', shift, '--journal-only', '--publish-to', pub, '--out', out]
+          const child = spawn(py, args, {
+            cwd: path.resolve(root, 'engine'),
+            env: { ...process.env, PYTHONPATH: 'src' },
+          })
+          let errTail = ''
+          child.stdout.on('data', (d) => { process.stdout.write(`[scan ${market}] ${d}`) })
+          child.stderr.on('data', (d) => { errTail = (errTail + d).slice(-4000) })
+          child.on('error', (e) => json(res, 500, { error: String(e?.message || e) }))
+          child.on('close', (code) => {
+            try { fs.unlinkSync(tmpCsv) } catch { /* ignore */ }
+            if (code !== 0) return json(res, 500, { error: 'engine scan failed', detail: errTail })
+            let count = 0
+            try {
+              count = JSON.parse(fs.readFileSync(path.join(pub, 'journal', 'events.json'), 'utf-8')).meta.count
+            } catch { /* ignore */ }
+            json(res, 200, { ok: true, market, count })
+          })
+        })
+        req.pipe(ws)
+        return
+      }
 
       // POST /api/journal/save/:id  — body is the annotation JSON
       if (req.method === 'POST' && url.startsWith('/api/journal/save/')) {

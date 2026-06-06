@@ -1,80 +1,9 @@
-/** Shape of a single trade in result.json (matches engine's output schema). */
-export type Trade = {
-  id: string;
-  market: string;
-  year: string;
-  ddMm: string;
-  time: string;
-  Bias: "positive" | "negative" | "neutral";
-  order: "Buy" | "Sell";
-  liquidity: "HOD" | "LOD" | "Local" | "Major";
-  age: string;
-  tradeduration: string;
-  mss: "Body" | "Wick";
-  additionalLiquidity: string;
-  setup: string;
-  setuptime: string;        // e.g. "28m" — time from sweep to setup formation
-  volatility: string;
-  Rvol: string;
-  gapsize: string;
-  gapfill: string;          // e.g. "5m" — time from gap forming to entry trigger
-  slPoints: string;
-  result: "Win" | "Loss" | "Break Even" | "Open";
-  news: string;
-  session: "London" | "New York";
-  photoUrl: string;
-  liquidityUrl: string;     // wider context snapshot showing liquidity formation + sweep
-  ath: string;
-  info: string;
-};
+/* ================================================================== *
+ *  Manual journaling workstation (v0.9) — types                       *
+ * ================================================================== */
 
-export type StatsSummary = {
-  csv_range: { from: string; to: string; candles: number };
-  total_trades: number;
-  decided_trades: number;
-  wins: number;
-  losses: number;
-  break_even: number;
-  open: number;
-  win_rate_pct: number;
-  account_return_pct_at_1pct_risk: number;
-  by_setup: Record<
-    string,
-    { count: number; wins: number; losses: number; be: number; win_rate_pct: number }
-  >;
-  by_session: Record<string, number>;
-  by_liquidity: Record<string, number>;
-  trades_with_news_high: number;
-};
-
-export type Manifest = {
-  published_at: number;
-  run_dir: string;
-  n_trades: number;
-};
-
-/** Filter state for the trade grid. */
-export type TradeFilter = {
-  result: "all" | "Win" | "Loss" | "Break Even";
-  side: "all" | "Buy" | "Sell";
-  setup: "all" | string;
-  session: "all" | "London" | "New York";
-  liquidity: "all" | "HOD" | "LOD" | "Local" | "Major";
-  withNews: boolean;
-};
-
-export const DEFAULT_FILTER: TradeFilter = {
-  result: "all",
-  side: "all",
-  setup: "all",
-  session: "all",
-  liquidity: "all",
-  withNews: false,
-};
-
-/* ------------------------------------------------------------------ *
- * Manual journal (v0.8): hand-marked setups on liquidity-grab charts  *
- * ------------------------------------------------------------------ */
+export type Candle = { t: number; o: number; h: number; l: number; c: number };
+export type Outcome = "Win" | "Loss" | "Break Even" | "Open";
 
 /** Strategy constants embedded by the engine so the UI's outcome-sim stays in sync. */
 export type JournalMeta = {
@@ -88,13 +17,16 @@ export type JournalMeta = {
   slMaxAtRef: number;
   slQuantizeStep: number;
   minFvgSize: number;
+  postHours: number;
+  setups: string[];
   generatedMs: number;
   count: number;
 };
 
-/** One HOD/LOD liquidity grab (10:00–12:00) the user journals by hand. */
+/** One HOD/LOD liquidity grab (touched 10:00–12:00) to journal by hand. */
 export type JournalEvent = {
   id: string;
+  market: string;
   date: string; // YYYY-MM-DD (local)
   ddMm: string;
   year: string;
@@ -102,39 +34,61 @@ export type JournalEvent = {
   sweepMs: number;
   direction: "buy" | "sell";
   liquidity: "HOD" | "LOD";
-  level: number; // the grabbed level (exact)
-  hodPrice: number;
-  lodPrice: number;
-  sweepIdx: number; // sweep candle position within the window
+  level: number;
+  formationIdx: number; // window-local index of the formation extreme
+  touchIdx: number; // window-local index where it was liquidated
+  sweepIdx: number; // alias of touchIdx
+  age: string;
+  session: string;
+  athToDate: number; // running all-time-high up to the grab
   candles: number;
 };
 
 export type JournalEventsFile = { meta: JournalMeta; events: JournalEvent[] };
 
-export type Candle = { t: number; o: number; h: number; l: number; c: number };
+/* ---- Drawings (all control points anchored in {time(ms), price}) ---- */
 
-export type Outcome = "Win" | "Loss" | "Break Even" | "Open";
+export type Anchor = { time: number; price: number };
 
-/** Hand-marked geometry + computed measurements, persisted per event. */
-export type Annotation = {
+export type MssDrawing = { type: "mss"; id: string; a: Anchor; b: Anchor };
+export type FvgDrawing = { type: "fvg"; id: string; p1: Anchor; p2: Anchor };
+export type FibDrawing = { type: "fib"; id: string; hi: Anchor; lo: Anchor };
+export type PositionDrawing = {
+  type: "position";
+  id: string;
+  direction: "buy" | "sell";
+  entry: number;
+  sl: number;
+  time: number; // left-edge anchor (ms)
+};
+export type Drawing = MssDrawing | FvgDrawing | FibDrawing | PositionDrawing;
+export type DrawingType = Drawing["type"];
+
+/** Manual fields the user fills in. */
+export type Manual = {
+  mssKind?: "Body" | "Wick" | null;
+  setup?: string | null;
+  news?: string | null;
+};
+
+/** Persisted per event: drawings + manual + denormalized auto/computed fields
+ *  (the flat fields feed /api/journal/index and the Excel export). */
+export type Annotation = Manual & {
   id?: string;
-  fvg?: { top: number; bottom: number } | null;
-  entry?: number | null;
-  sl?: number | null;
-  tp?: number | null;
-  mss?: { idx: number; kind: "Body" | "Wick" } | null;
-  entryIdx?: number | null;
-  note?: string;
-  // denormalized context + computed (filled at save time for /api/journal/index)
-  date?: string;
-  ddMm?: string;
-  year?: string;
+  drawings?: Drawing[];
+  primaryPositionId?: string | null;
+  // denormalized for the index + xlsx:
+  market?: string;
+  date?: string; // DD/MM/YYYY
+  time?: string; // HH:MM
+  order?: "Buy" | "Sell" | null;
   liquidity?: string;
-  direction?: string;
+  ageStr?: string;
+  session?: string;
   level?: number;
-  fvgSize?: number | null;
-  slSize?: number | null;
+  slPoints?: number | null;
   rr?: number | null;
   outcome?: Outcome | null;
+  athPct?: number | null;
   updatedMs?: number;
 };

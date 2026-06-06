@@ -125,11 +125,12 @@ NEWS_CACHE_TTL_HOURS = 24
 SNAPSHOT_CANDLES_BEFORE = 20
 SNAPSHOT_CANDLES_AFTER = 20
 
-# v0.8 — Manual journal: per-event interactive-chart window (local time).
-#   start = touch-day JOURNAL_WINDOW_PRE_HOUR:00 ; end = sweep_time + JOURNAL_WINDOW_POST_HOURS
-# Wide enough to see the overnight HOD/LOD context tail + the post-sweep setup play out.
-JOURNAL_WINDOW_PRE_HOUR = 7
-JOURNAL_WINDOW_POST_HOURS = 4
+# v0.9 — Manual journal window spans FORMATION -> RESOLUTION so the formation->touch
+#   liquidity segment is always on-chart:
+#   start = formation_time - JOURNAL_WINDOW_PRE_PAD_MIN ; end = sweep_time + JOURNAL_WINDOW_POST_HOURS
+JOURNAL_WINDOW_PRE_PAD_MIN = 30
+JOURNAL_WINDOW_POST_HOURS = 2
+JOURNAL_WINDOW_PRE_HOUR = 7  # (legacy v0.8 constant, unused)
 
 # CSV format
 CSV_DELIMITER = "\t"

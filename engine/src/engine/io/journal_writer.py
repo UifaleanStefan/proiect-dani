@@ -1,16 +1,16 @@
-"""Export manual-journal events for the React journaling page (v0.8).
+"""Export manual-journal events for the TradingView-style journaling UI (v0.9).
 
-For every HOD/LOD liquidity grab from `find_sweep_events` (one per day, touched in
-10:00..12:00) we emit:
+For EVERY HOD and LOD grab touched in 10:00..12:00 (up to two per day; see
+`liquidity.find_journal_grabs`) we emit:
   - a per-event raw OHLC window  -> journal/candles/{id}.json  = [{t,o,h,l,c}]
   - a metadata row in            -> journal/events.json        = {meta, events:[...]}
 
-Unlike result.json (auto-detected *trades*), this export is UNFILTERED by setup:
-the user judges MSS/FVG/entry/SL/TP by hand on the chart, and the UI measures them.
+The window spans FORMATION -> RESOLUTION (formation_time - pad .. sweep_time + post hours)
+so the formation->touch liquidity segment is always visible on the chart.
 
-`t` is epoch-milliseconds (UTC); the UI formats labels in the Europe/Bucharest tz.
-Prices are kept exact. HOD/LOD context levels are computed in one vectorized pass
-(no per-event full-frame masking — that would re-introduce the O(days*n) hang).
+Auto-fill fields the UI shows read-only: market, date, time, order, liquidity, liquidity
+age, session, athToDate (running all-time-high up to the grab; UI computes -ATH% from the
+hand-drawn entry). `t` is epoch-milliseconds (UTC); the UI formats in Europe/Bucharest.
 """
 
 from __future__ import annotations
@@ -23,42 +23,26 @@ import numpy as np
 import pandas as pd
 
 from .. import config
+from ..detectors import liquidity as liq
+from ..filters import schedule as sched
+
+# Setup vocabulary for the UI's manual "setup" dropdown (mirrors setup_classifier).
+SETUP_NAMES = [
+    "OSG", "2G", "2CG", "3G", "3CG", "MG",
+    "SLG + OSG", "SLG + 2G", "SLG + 2CG", "SLG + 3G", "SLG + 3CG", "SLG + MG",
+]
 
 
-def _hod_lod_per_day(df: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
-    """Vectorized per-day overnight extremes (morning < 10:00), for drawing context
-    lines. The *swept* level itself comes exact from the event; this just supplies the
-    opposite line. Returns (hod_by_date, lod_by_date) indexed by python date."""
-    times = df.index.tz_convert(config.TIMEZONE)
-    date_arr = np.asarray(times.date)
-    hour_arr = np.asarray(times.hour)
-    morning = hour_arr < config.HOD_LOD_FORMATION_END_HOUR
-    md = pd.DataFrame({
-        "d": date_arr[morning],
-        "h": df["high"].to_numpy()[morning],
-        "l": df["low"].to_numpy()[morning],
-    })
-    if md.empty:
-        return pd.Series(dtype=float), pd.Series(dtype=float)
-    return md.groupby("d")["h"].max(), md.groupby("d")["l"].min()
-
-
-def _window_bounds(df: pd.DataFrame, sweep_time: pd.Timestamp) -> tuple[pd.Timestamp, pd.Timestamp]:
-    """[touch-day PRE_HOUR:00 .. sweep_time + POST_HOURS] in the data's tz."""
-    tz = df.index.tz
-    local = sweep_time.tz_convert(config.TIMEZONE)
-    start = pd.Timestamp(local.date(), tz=tz) + pd.Timedelta(hours=config.JOURNAL_WINDOW_PRE_HOUR)
+def _window_bounds(formation_time: pd.Timestamp, sweep_time: pd.Timestamp) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """[formation_time - PRE_PAD_MIN .. sweep_time + POST_HOURS]."""
+    start = formation_time - pd.Timedelta(minutes=config.JOURNAL_WINDOW_PRE_PAD_MIN)
     end = sweep_time + pd.Timedelta(hours=config.JOURNAL_WINDOW_POST_HOURS)
     return start, end
 
 
 def _candles(window: pd.DataFrame) -> list[dict]:
-    """Serialize an OHLC window to [{t(ms), o, h, l, c}].
-
-    `t` = epoch milliseconds (UTC), consistent with event `sweepMs` and trade ids.
-    Built from int64 ns via Timestamp.value (resolution-independent — this index is
-    datetime64[us], so .asi8 would be microseconds and mis-scale)."""
-    ms = [int(ts.value // 1_000_000) for ts in window.index]  # Timestamp.value is always ns
+    """Serialize an OHLC window to [{t(ms), o, h, l, c}] (Timestamp.value is always ns)."""
+    ms = [int(ts.value // 1_000_000) for ts in window.index]
     o = window["open"].to_numpy()
     h = window["high"].to_numpy()
     low = window["low"].to_numpy()
@@ -69,35 +53,30 @@ def _candles(window: pd.DataFrame) -> list[dict]:
     ]
 
 
-def export(df: pd.DataFrame, sweeps: list, out_dir: str | Path) -> int:
+def export(df: pd.DataFrame, out_dir: str | Path, *, market: str | None = None) -> int:
     """Write journal/events.json + journal/candles/{id}.json. Returns event count."""
     out_dir = Path(out_dir)
     jdir = out_dir / "journal"
     cdir = jdir / "candles"
     cdir.mkdir(parents=True, exist_ok=True)
 
-    hod_map, lod_map = _hod_lod_per_day(df)
-    events: list[dict] = []
+    market = market or config.MARKET_LABEL
+    grabs = liq.find_journal_grabs(df)
+    ath_arr = np.maximum.accumulate(df["high"].to_numpy())  # running all-time-high
 
-    for sweep in sweeps:
-        st = sweep.sweep_time
-        start, end = _window_bounds(df, st)
+    events: list[dict] = []
+    for g in grabs:
+        st = g.sweep_time
+        ft = g.pivot_time  # formation extreme
+        start, end = _window_bounds(ft, st)
         window = df.loc[start:end]
         if len(window) == 0:
             continue
 
         local = st.tz_convert(config.TIMEZONE)
-        d = local.date()
         eid = str(int(st.timestamp() * 1000))
-
-        hod_price = float(hod_map.get(d, sweep.swept_price))
-        lod_price = float(lod_map.get(d, sweep.swept_price))
-        if sweep.liquidity_type == "HOD":
-            hod_price = float(sweep.swept_price)
-        else:
-            lod_price = float(sweep.swept_price)
-
-        sweep_pos = int(window.index.searchsorted(st))
+        touch_pos = int(window.index.searchsorted(st))
+        formation_pos = int(window.index.searchsorted(ft))
 
         candles = _candles(window)
         with (cdir / f"{eid}.json").open("w", encoding="utf-8") as f:
@@ -105,17 +84,21 @@ def export(df: pd.DataFrame, sweeps: list, out_dir: str | Path) -> int:
 
         events.append({
             "id": eid,
+            "market": market,
             "date": local.strftime("%Y-%m-%d"),
             "ddMm": local.strftime("%d/%m"),
             "year": local.strftime("%Y"),
             "sweepTime": local.strftime("%H:%M"),
             "sweepMs": int(st.timestamp() * 1000),
-            "direction": sweep.direction,          # "buy" | "sell"
-            "liquidity": sweep.liquidity_type,      # "HOD" | "LOD"
-            "level": float(sweep.swept_price),      # the grabbed level (exact)
-            "hodPrice": hod_price,
-            "lodPrice": lod_price,
-            "sweepIdx": sweep_pos,                  # sweep candle position within window
+            "direction": g.direction,             # "buy" | "sell"
+            "liquidity": g.liquidity_type,         # "HOD" | "LOD"
+            "level": float(g.swept_price),         # the grabbed level (exact)
+            "formationIdx": formation_pos,         # where the extreme formed (window-local)
+            "touchIdx": touch_pos,                 # where it was liquidated (window-local)
+            "sweepIdx": touch_pos,                 # alias (back-compat)
+            "age": liq.format_age(g.age),          # liquidity age string
+            "session": sched.label_session(st),    # London / New York
+            "athToDate": float(ath_arr[g.sweep_idx]),
             "candles": len(candles),
         })
 
@@ -124,7 +107,7 @@ def export(df: pd.DataFrame, sweeps: list, out_dir: str | Path) -> int:
 
     payload = {
         "meta": {
-            "market": config.MARKET_LABEL,
+            "market": market,
             "timezone": config.TIMEZONE,
             "tpRr": config.TP_RR_RATIO,
             "beRr": config.BE_RR_TRIGGER,
@@ -134,6 +117,8 @@ def export(df: pd.DataFrame, sweeps: list, out_dir: str | Path) -> int:
             "slMaxAtRef": config.SL_MAX_AT_REF,
             "slQuantizeStep": config.SL_QUANTIZE_STEP,
             "minFvgSize": config.MIN_FVG_SIZE_POINTS,
+            "postHours": config.JOURNAL_WINDOW_POST_HOURS,
+            "setups": SETUP_NAMES,
             "generatedMs": int(time.time() * 1000),
             "count": len(events),
         },
