@@ -15,6 +15,12 @@ const UP = "#089981";
 const DOWN = "#ffffff";
 const r1 = (n: number) => Math.round(n * 10) / 10;
 
+// lightweight-charts labels the time axis in UTC; format ticks/crosshair in the
+// market timezone so the axis reads 10:00 (not 07:00 UTC).
+const TZ = "Europe/Bucharest";
+const _hm = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
+const fmtHM = (t: unknown) => (typeof t === "number" ? _hm.format(new Date(t * 1000)) : String(t));
+
 const TOOLS: { key: Tool; Icon: typeof Minus; label: string }[] = [
   { key: "select", Icon: MousePointer2, label: "Cursor" },
   { key: "mss", Icon: Minus, label: "MSS arrow" },
@@ -64,8 +70,12 @@ export function Chart({
         vertLine: { color: "rgba(255,255,255,0.22)", width: 1, style: LineStyle.Dotted, labelBackgroundColor: "#1c1f26" },
         horzLine: { color: "rgba(255,255,255,0.22)", width: 1, style: LineStyle.Dotted, labelBackgroundColor: "#1c1f26" },
       },
+      localization: { timeFormatter: fmtHM },
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
-      timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 6 },
+      timeScale: {
+        borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 6,
+        tickMarkFormatter: fmtHM,
+      },
     });
     const series = chart.addSeries(CandlestickSeries, {
       upColor: UP, wickUpColor: UP, borderUpColor: UP,
@@ -290,6 +300,12 @@ export function Chart({
         >
           {segs.map((s) => renderSeg(s, startEdit))}
         </svg>
+        {tool === "select" && live.length === 0 && (
+          <div className="absolute top-3 left-3 text-[11px] text-[#aeb4bf] bg-black/55 border border-white/10 px-2.5 py-1.5 rounded-lg pointer-events-none">
+            Pick a tool on the left → <b className="text-white">click</b> for Long/Short, or{" "}
+            <b className="text-white">drag</b> for FVG / MSS / Fibonacci.
+          </div>
+        )}
       </div>
     </div>
   );
