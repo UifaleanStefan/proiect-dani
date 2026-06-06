@@ -33,9 +33,14 @@ SETUP_NAMES = [
 ]
 
 
-def _window_bounds(formation_time: pd.Timestamp, sweep_time: pd.Timestamp) -> tuple[pd.Timestamp, pd.Timestamp]:
-    """[formation_time - PRE_PAD_MIN .. sweep_time + POST_HOURS]."""
-    start = formation_time - pd.Timedelta(minutes=config.JOURNAL_WINDOW_PRE_PAD_MIN)
+def _window_bounds(sweep_time: pd.Timestamp, tz) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """[touch-day 10:00 local .. sweep_time + POST_HOURS].
+
+    The chart starts at 10:00 sharp (the analysis window) — the overnight formation is
+    before this and is conveyed by the level line drawn from the left edge to the touch.
+    """
+    local = sweep_time.tz_convert(config.TIMEZONE)
+    start = pd.Timestamp(local.date(), tz=tz) + pd.Timedelta(hours=config.HOD_LOD_FORMATION_END_HOUR)
     end = sweep_time + pd.Timedelta(hours=config.JOURNAL_WINDOW_POST_HOURS)
     return start, end
 
@@ -67,8 +72,8 @@ def export(df: pd.DataFrame, out_dir: str | Path, *, market: str | None = None) 
     events: list[dict] = []
     for g in grabs:
         st = g.sweep_time
-        ft = g.pivot_time  # formation extreme
-        start, end = _window_bounds(ft, st)
+        ft = g.pivot_time  # formation extreme (overnight; before the 10:00 window)
+        start, end = _window_bounds(st, df.index.tz)
         window = df.loc[start:end]
         if len(window) == 0:
             continue

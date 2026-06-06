@@ -7,6 +7,7 @@ import { MousePointer2, Minus, Square, Ruler, TrendingUp, TrendingDown, Trash2 }
 import type { Anchor, Candle, Drawing, JournalEvent, JournalMeta } from "../../types";
 import { logicalToTime, timeToLogical } from "../../lib/chartCoords";
 import { newId, derivePosition } from "../../lib/drawings";
+import { slBand } from "../../lib/journalOutcome";
 
 type Tool = "select" | "mss" | "fvg" | "fib" | "long" | "short";
 
@@ -92,19 +93,23 @@ export function Chart({
     series.setData(data);
     setSelId(null);
     setDraft(null);
-    // rAF watcher: re-render the overlay only when the visible range or width changes
-    // (covers first paint, pan, zoom). Idle-cheap; robust vs missing the first paint.
+
     const ts = chart.timeScale();
-    let prevKey = "";
-    let raf = 0;
-    const watch = () => {
-      const r = ts.getVisibleLogicalRange();
-      const key = r ? `${r.from.toFixed(2)},${r.to.toFixed(2)},${svgRef.current?.clientWidth ?? 0}` : "";
-      if (key && key !== prevKey) { prevKey = key; setTick((t) => t + 1); }
-      raf = requestAnimationFrame(watch);
+    const redraw = () => setTick((t) => t + 1);
+    ts.fitContent();
+    // Redraw on user pan/zoom; refit + redraw on resize (also recovers a 0-width mount).
+    ts.subscribeVisibleLogicalRangeChange(redraw);
+    const ro = new ResizeObserver(() => { ts.fitContent(); redraw(); });
+    if (wrapRef.current) ro.observe(wrapRef.current);
+    // Settle bumps: the chart paints on its own rAF after this effect, so a single render
+    // can race ahead of the first paint (converters null). These post-paint re-renders
+    // guarantee the overlay computes once the chart's coordinate space is ready.
+    const timers = [60, 160, 320, 550, 850, 1300].map((ms) => window.setTimeout(redraw, ms));
+    return () => {
+      ts.unsubscribeVisibleLogicalRangeChange(redraw);
+      ro.disconnect();
+      timers.forEach((t) => window.clearTimeout(t));
     };
-    raf = requestAnimationFrame(watch);
-    return () => cancelAnimationFrame(raf);
   }, [api, candles]);
 
   const setPan = useCallback((on: boolean) => {
@@ -130,49 +135,69 @@ export function Chart({
     return [e.clientX - rect.left, e.clientY - rect.top];
   };
 
-  // ---- create-by-drag (tool armed) ----
+  // ---- create-by-drag / click-to-place (tool armed) ----
   const onSvgDown = (e: RPE) => {
     if (toolRef.current === "select") return;
+    e.preventDefault();
     const [px, py] = evtXY(e);
     const a = toAnchor(px, py);
     if (!a) return;
+    try { svgRef.current?.setPointerCapture(e.pointerId); } catch { /* ignore */ }
     setPan(false);
     setDraft({ a, b: a });
+    const startPx = px;
+    let lastB = a;
     const move = (ev: globalThis.PointerEvent) => {
       const rect = svgRef.current!.getBoundingClientRect();
       const b = toAnchor(ev.clientX - rect.left, ev.clientY - rect.top);
-      if (b) setDraft({ a, b });
+      if (b) { lastB = b; setDraft({ a, b }); }
     };
     const up = (ev: globalThis.PointerEvent) => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      try { svgRef.current?.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
       const rect = svgRef.current!.getBoundingClientRect();
-      const b = toAnchor(ev.clientX - rect.left, ev.clientY - rect.top) ?? a;
-      commitCreate(toolRef.current, a, b);
+      const b = toAnchor(ev.clientX - rect.left, ev.clientY - rect.top) ?? lastB;
+      const moved = Math.hypot(ev.clientX - rect.left - startPx, ev.clientY - rect.top - py);
+      const created = commitCreate(toolRef.current, a, b, moved);
       setDraft(null);
-      setTool("select");
+      if (created) setTool("select");
       setPan(true);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
   };
 
-  const commitCreate = (t: Tool, a: Anchor, b: Anchor) => {
+  // returns true if a shape was created (so the tool resets to select)
+  const commitCreate = (t: Tool, a: Anchor, b: Anchor, moved: number): boolean => {
+    const CLICK = 5; // px — below this it's a "click", not a drag
     let d: Drawing | null = null;
-    if (t === "mss") d = { type: "mss", id: newId("mss"), a, b };
-    else if (t === "fvg") d = { type: "fvg", id: newId("fvg"), p1: a, p2: b };
-    else if (t === "fib") {
+    if (t === "long" || t === "short") {
+      // click-to-place: entry at the click, SL a default (one min-band) away → drag SL to adjust.
+      const dir = t === "long" ? "buy" : "sell";
+      let entry = a.price, sl = b.price;
+      if (moved < CLICK) {
+        const off = meta ? slBand(entry, meta)[0] : 12;
+        sl = dir === "buy" ? entry - off : entry + off;
+      }
+      d = { type: "position", id: newId("pos"), direction: dir, entry, sl, time: a.time };
+    } else if (moved < CLICK) {
+      return false; // MSS/FVG/Fib need a real drag — ignore stray clicks, keep tool armed
+    } else if (t === "mss") {
+      d = { type: "mss", id: newId("mss"), a, b };
+    } else if (t === "fvg") {
+      d = { type: "fvg", id: newId("fvg"), p1: a, p2: b };
+    } else if (t === "fib") {
       const hi = a.price >= b.price ? a : b;
       const lo = a.price >= b.price ? b : a;
       d = { type: "fib", id: newId("fib"), hi, lo };
-    } else if (t === "long" || t === "short") {
-      d = { type: "position", id: newId("pos"), direction: t === "long" ? "buy" : "sell", entry: a.price, sl: b.price, time: a.time };
     }
-    if (!d) return;
+    if (!d) return false;
     const next = [...liveRef.current, d];
     setLive(next);
     setSelId(d.id);
     onChange(next);
+    return true;
   };
 
   // ---- edit existing (drag handle / body) ----
@@ -181,6 +206,7 @@ export function Chart({
     if (toolRef.current !== "select") return;
     setSelId(id);
     setPan(false);
+    try { svgRef.current?.setPointerCapture(e.pointerId); } catch { /* ignore */ }
     const rect = svgRef.current!.getBoundingClientRect();
     const startA = toAnchor(e.clientX - rect.left, e.clientY - rect.top);
     const base = liveRef.current.find((d) => d.id === id);
@@ -195,6 +221,7 @@ export function Chart({
     const up = () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      try { svgRef.current?.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
       onChange(liveRef.current);
       setPan(true);
     };
@@ -272,7 +299,7 @@ export function Chart({
 
 type Conv = (v: number) => number | null;
 type Seg =
-  | { kind: "liq"; x1: number; x2: number; y: number; label: string }
+  | { kind: "liq"; x1: number; x2: number; y: number; right: number; label: string; liq: "HOD" | "LOD" }
   | { kind: "mss"; id: string; x1: number; y1: number; x2: number; y2: number; sel: boolean }
   | { kind: "fvg"; id: string; x: number; y: number; w: number; h: number; sel: boolean; size: number }
   | { kind: "fib"; id: string; xL: number; xR: number; y0: number; y50: number; y100: number; sel: boolean }
@@ -311,11 +338,13 @@ function computeShapes(
   const out: Seg[] = [];
   const ok = (v: number | null): v is number => v != null && isFinite(v);
 
-  // auto HOD/LOD segment formation→touch
-  const fIdx = event.formationIdx, tIdx = event.touchIdx;
-  if (candles[fIdx] && candles[tIdx]) {
-    const x1 = X(candles[fIdx].t), x2 = X(candles[tIdx].t), y = Y(event.level);
-    if (ok(x1) && ok(x2) && ok(y)) out.push({ kind: "liq", x1, x2, y, label: event.liquidity });
+  // auto HOD/LOD level line: from the left edge (10:00) to the liquidation candle, then stop.
+  const tIdx = event.touchIdx;
+  if (candles.length && candles[tIdx]) {
+    const x1 = X(candles[0].t), x2 = X(candles[tIdx].t), y = Y(event.level);
+    if (ok(x1) && ok(x2) && ok(y)) {
+      out.push({ kind: "liq", x1, x2, y, right: width, label: `${event.liquidity} ${r1(event.level)}`, liq: event.liquidity });
+    }
   }
 
   for (const d of live) {
@@ -358,10 +387,23 @@ function renderSeg(
   );
 
   if (s.kind === "liq") {
+    // LOD = up-side liquidity → marker points up below the line; HOD → points down above.
+    const up = s.liq === "LOD";
+    const tx = s.x2, ty = s.y;
+    const tri = up
+      ? `${tx},${ty + 3} ${tx - 5},${ty + 12} ${tx + 5},${ty + 12}`
+      : `${tx},${ty - 3} ${tx - 5},${ty - 12} ${tx + 5},${ty - 12}`;
     return (
       <g key="liq">
-        <line x1={s.x1} y1={s.y} x2={s.x2} y2={s.y} stroke="rgba(255,255,255,0.40)" strokeWidth={1} />
-        <text x={s.x1 + 4} y={s.y - 4} fontSize={10} fill="rgba(255,255,255,0.55)">{s.label}</text>
+        {/* faint reference of the level across the analysis area (subtle; the solid
+            part + marker mark the actual liquidation) */}
+        {s.right > s.x2 + 1 && (
+          <line x1={s.x2} y1={s.y} x2={s.right} y2={s.y} stroke="rgba(245,179,1,0.18)" strokeWidth={1} strokeDasharray="3 5" />
+        )}
+        <line x1={s.x1} y1={s.y} x2={s.x2} y2={s.y} stroke="rgba(255,255,255,0.85)" strokeWidth={1.5} />
+        <polygon points={tri} fill="#f5b301" />
+        <circle cx={tx} cy={ty} r={3.5} fill="#f5b301" />
+        <text x={tx + 8} y={ty + (up ? 16 : -8)} fontSize={11} fill="#f5b301" fontWeight={700}>{s.label}</text>
       </g>
     );
   }
